@@ -52,8 +52,3 @@ class Lang
     }
 }
 
-// Global shorthand
-function __(string $key, array $params = []): string
-{
-    return Lang::get($key, $params);
-}
