@@ -152,8 +152,9 @@ foreach ($allCandidates as $c) { $candByCategory[$c['category_id']][] = $c; }
 $pendingCount = count($dedupQueue);
 
 $pageTitle      = __('results_title') . ' — ' . __('round_number') . $round['round_number'];
-$activeMenu     = 'rounds';
+$activeMenu     = 'results';
 $currentEventId = $eventId;
+$currentRoundId = $roundId;
 
 ob_start();
 ?>

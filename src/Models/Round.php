@@ -98,6 +98,63 @@ class Round
         $stmt->execute([$status, $id]);
     }
 
+    /**
+     * Categories active in this round, with advancement settings.
+     * Falls back to all event categories if round_category_map is empty.
+     */
+    public static function categoriesFor(int $roundId): array
+    {
+        $pdo  = Database::get();
+        $stmt = $pdo->prepare(
+            'SELECT c.*, rcm.advancement_count, rcm.advancement_mode, rcm.next_category_id
+             FROM round_category_map rcm
+             JOIN categories c ON c.id = rcm.category_id
+             WHERE rcm.round_id = ?
+             ORDER BY c.sort_order, c.name'
+        );
+        $stmt->execute([$roundId]);
+        $rows = $stmt->fetchAll();
+
+        if (!empty($rows)) return $rows;
+
+        // Fallback for rounds pre-dating the pipeline migration
+        $stmt = $pdo->prepare(
+            'SELECT c.*, NULL AS advancement_count, \'manual\' AS advancement_mode, NULL AS next_category_id
+             FROM categories c
+             JOIN event_rounds r ON r.event_id = c.event_id
+             WHERE r.id = ?
+             ORDER BY c.sort_order, c.name'
+        );
+        $stmt->execute([$roundId]);
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Save (replace) the category map for a round.
+     * $settings is an array keyed by category_id:
+     *   ['mode' => 'auto'|'manual'|'all'|'none', 'count' => int|null, 'next_cat' => int|null]
+     */
+    public static function saveCategoryMap(int $roundId, array $settings): void
+    {
+        $pdo = Database::get();
+        $pdo->prepare('DELETE FROM round_category_map WHERE round_id = ?')->execute([$roundId]);
+
+        $stmt = $pdo->prepare(
+            'INSERT INTO round_category_map
+             (round_id, category_id, advancement_mode, advancement_count, next_category_id)
+             VALUES (?, ?, ?, ?, ?)'
+        );
+        foreach ($settings as $catId => $s) {
+            $stmt->execute([
+                $roundId,
+                (int) $catId,
+                $s['mode']    ?? 'manual',
+                isset($s['count']) && $s['count'] !== '' ? (int) $s['count'] : null,
+                isset($s['next_cat']) && $s['next_cat'] ? (int) $s['next_cat'] : null,
+            ]);
+        }
+    }
+
     // Returns the currently active round for a given event (public voting)
     public static function activeForEvent(int $eventId): ?array
     {

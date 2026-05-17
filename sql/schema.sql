@@ -35,6 +35,8 @@ CREATE TABLE IF NOT EXISTS `events` (
   `access_mode`        ENUM('anonymous','voluntary_registration','mandatory_registration','closed_list','registration_with_approval') NOT NULL DEFAULT 'anonymous',
   `email_verification` TINYINT(1) NOT NULL DEFAULT 0,
   `results_public`     TINYINT(1) NOT NULL DEFAULT 1,
+  `theme_preset`       VARCHAR(50) NULL,
+  `theme_colors`       JSON NULL,
   `status`             ENUM('draft','active','closed','archived') NOT NULL DEFAULT 'draft',
   `created_by`         INT UNSIGNED NOT NULL,
   `created_at`         DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -61,6 +63,19 @@ CREATE TABLE IF NOT EXISTS `event_rounds` (
   `results_released`    TINYINT(1) NOT NULL DEFAULT 0,
   FOREIGN KEY (`event_id`)        REFERENCES `events`(`id`) ON DELETE CASCADE,
   FOREIGN KEY (`parent_round_id`) REFERENCES `event_rounds`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Per-round category activation + advancement rules
+CREATE TABLE IF NOT EXISTS `round_category_map` (
+  `round_id`          INT UNSIGNED NOT NULL,
+  `category_id`       INT UNSIGNED NOT NULL,
+  `advancement_count` TINYINT UNSIGNED NULL COMMENT 'NULL=all, 0=none, N=top-N',
+  `advancement_mode`  ENUM('auto','manual','all','none') NOT NULL DEFAULT 'manual',
+  `next_category_id`  INT UNSIGNED NULL COMMENT 'NULL=same cat; set to merge into another cat in next round',
+  PRIMARY KEY (`round_id`, `category_id`),
+  FOREIGN KEY (`round_id`)         REFERENCES `event_rounds`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`category_id`)      REFERENCES `categories`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`next_category_id`) REFERENCES `categories`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Categories within an event

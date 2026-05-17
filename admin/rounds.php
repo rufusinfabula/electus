@@ -41,17 +41,6 @@ $rounds = Round::forEvent($eventId);
 $pdo    = Database::get();
 
 // Event-level stats
-$totalVotes = (int) $pdo->prepare(
-    'SELECT COUNT(*) FROM votes v
-     JOIN event_rounds r ON r.id = v.round_id
-     WHERE r.event_id = ?'
-)->execute([$eventId]) ? $pdo->query(
-    'SELECT COUNT(*) FROM votes v
-     JOIN event_rounds r ON r.id = v.round_id
-     WHERE r.event_id = ' . $eventId
-)->fetchColumn() : 0;
-
-// Use prepared properly
 $stmt = $pdo->prepare(
     'SELECT COUNT(*) FROM votes v
      JOIN event_rounds r ON r.id = v.round_id WHERE r.event_id = ?'
@@ -196,150 +185,172 @@ ob_start();
 </div>
 <?php endif ?>
 
-<!-- Rounds -->
+<!-- Pipeline -->
 <?php if (empty($rounds)): ?>
 <div class="e-card uk-text-center" style="padding:60px">
     <span uk-icon="icon:list;ratio:2" style="color:#c8c3e0"></span>
-    <p style="color:#9a94b8;margin-top:12px">Nessun turno ancora. Crea il primo turno di voto.</p>
+    <p style="color:#9a94b8;margin-top:12px">Nessuna fase ancora. Crea la prima fase di voto.</p>
     <a href="/admin/rounds-edit.php?event_id=<?= $eventId ?>" class="uk-button uk-button-primary uk-margin-top">
         <span uk-icon="plus-circle"></span> <?= __('round_new') ?>
     </a>
 </div>
 <?php else: ?>
 
-<div style="display:flex;flex-direction:column;gap:12px">
-    <?php foreach ($rounds as $round):
-        // Lifecycle step
-        $step = 0;
-        if ($round['status'] === 'active')            $step = 1;
-        if ($round['status'] === 'closed')            $step = 2;
-        if ($round['votes_validated'])                $step = 3;
-        if ($round['results_released'])               $step = 4;
-    ?>
-    <div class="e-card" style="padding:20px 24px">
+<div class="e-pipeline">
+<?php foreach ($rounds as $i => $round):
+    $step       = 0;
+    if ($round['status'] === 'active')  $step = 1;
+    if ($round['status'] === 'closed')  $step = 2;
+    if ($round['votes_validated'])      $step = 3;
+    if ($round['results_released'])     $step = 4;
 
-        <!-- Round header -->
-        <div class="uk-flex uk-flex-between uk-flex-top uk-margin-small-bottom">
-            <div class="uk-flex uk-flex-middle" style="gap:10px">
-                <span uk-icon="icon:<?= $modelIcons[$round['model']] ?? 'list' ?>"
-                      style="color:var(--e-accent)"></span>
-                <div>
-                    <h3 style="margin:0;font-size:.95rem;font-weight:700">
-                        <?= __('round_number') ?><?= $round['round_number'] ?>
-                        <?= $round['label'] ? '— ' . htmlspecialchars($round['label']) : '' ?>
-                    </h3>
-                    <p style="margin:0;font-size:.78rem;color:#9a94b8">
-                        <?= __('model_' . $round['model']) ?>
-                        <?php if ($round['opens_at']): ?>
-                        &nbsp;·&nbsp;<?= date('d/m/Y H:i', strtotime($round['opens_at'])) ?>
-                        → <?= $round['closes_at'] ? date('d/m/Y H:i', strtotime($round['closes_at'])) : '∞' ?>
-                        <?php endif ?>
-                    </p>
-                </div>
-            </div>
-            <!-- Lifecycle indicator -->
-            <div style="display:flex;align-items:center;gap:6px;font-size:.72rem">
-                <?php
-                $steps = [
-                    [0, 'Bozza',     'e-badge-draft'],
-                    [1, 'In corso',  'e-badge-active'],
-                    [2, 'Chiuso',    'e-badge-closed'],
-                    [3, 'Validato',  ''],
-                    [4, 'Pubblicato','e-badge-active'],
-                ];
-                foreach ($steps as [$s, $label, $cls]):
-                    $done    = $step > $s;
-                    $current = $step === $s;
-                ?>
-                <span <?php if ($s > 0): ?>style="color:#c8c3e0"><?= '›' ?></span><?php endif ?>
-                <span class="<?= $current ? 'e-badge ' . $cls : '' ?>"
-                      style="<?= $done ? 'color:#27ae60;font-weight:700' : ($current ? '' : 'color:#c8c3e0') ?>">
-                    <?= $done ? '✓' : '' ?><?= $label ?>
-                </span>
-                <?php endforeach ?>
+    $roundCats  = Round::categoriesFor((int) $round['id']);
+    $isLast     = $i === count($rounds) - 1;
+
+    $steps = [
+        [0, 'Bozza',     'e-badge-draft'],
+        [1, 'In corso',  'e-badge-active'],
+        [2, 'Chiuso',    'e-badge-closed'],
+        [3, 'Validato',  ''],
+        [4, 'Pubblicato','e-badge-active'],
+    ];
+?>
+<!-- Phase block -->
+<div class="e-pipeline-block e-card">
+
+    <!-- Round header -->
+    <div class="uk-flex uk-flex-between uk-flex-top">
+        <div class="uk-flex uk-flex-middle" style="gap:10px">
+            <div class="e-pipeline-number"><?= $round['round_number'] ?></div>
+            <div>
+                <h3 style="margin:0;font-size:.95rem;font-weight:700;color:var(--e-text)">
+                    <?= $round['label'] ? htmlspecialchars($round['label']) : 'Fase ' . $round['round_number'] ?>
+                </h3>
+                <p style="margin:0;font-size:.78rem;color:#9a94b8">
+                    <span uk-icon="icon:<?= $modelIcons[$round['model']] ?? 'list' ?>;ratio:.8"></span>
+                    <?= __('model_' . $round['model']) ?>
+                    <?php if ($round['opens_at']): ?>
+                    &nbsp;·&nbsp;<?= date('d/m/Y', strtotime($round['opens_at'])) ?>
+                    → <?= $round['closes_at'] ? date('d/m/Y', strtotime($round['closes_at'])) : '∞' ?>
+                    <?php endif ?>
+                </p>
             </div>
         </div>
+        <!-- Lifecycle stepper -->
+        <div style="display:flex;align-items:center;gap:4px;font-size:.7rem;flex-shrink:0">
+            <?php foreach ($steps as [$s, $lbl, $cls]):
+                $done    = $step > $s;
+                $current = $step === $s;
+                if ($s > 0) echo '<span style="color:#ddd">›</span>';
+            ?>
+            <span class="<?= $current ? 'e-badge ' . $cls : '' ?>"
+                  style="<?= $done ? 'color:#27ae60;font-weight:700' : ($current ? '' : 'color:#c8c3e0') ?>">
+                <?= $done ? '✓ ' : '' ?><?= $lbl ?>
+            </span>
+            <?php endforeach ?>
+        </div>
+    </div>
 
-        <!-- Action buttons -->
-        <div class="uk-flex uk-flex-wrap" style="gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid #f5f3ff">
-
-            <a href="/admin/candidates.php?round_id=<?= $round['id'] ?>"
-               class="uk-button uk-button-default uk-button-small">
-                <?= __('candidates_title') ?>
-            </a>
-
-            <a href="/admin/results.php?round_id=<?= $round['id'] ?>"
-               class="uk-button uk-button-default uk-button-small">
-                <?= __('results_title') ?>
-                <?php if ($round['results_released']): ?>
-                <span style="color:#27ae60;margin-left:4px">&#127758;</span>
-                <?php endif ?>
-            </a>
-
-            <a href="/admin/rounds-edit.php?id=<?= $round['id'] ?>&event_id=<?= $eventId ?>"
-               class="uk-button uk-button-default uk-button-small">
-                <?= __('edit') ?>
-            </a>
-
-            <!-- Activate / Close -->
-            <?php if (in_array($round['status'], ['draft','active'], true)): ?>
-            <form method="post" style="display:inline;margin:0">
-                <?= Csrf::field() ?>
-                <input type="hidden" name="round_id" value="<?= $round['id'] ?>">
-                <?php if ($round['status'] === 'draft'): ?>
-                <input type="hidden" name="_action" value="activate">
-                <button class="uk-button uk-button-primary uk-button-small">
-                    <span uk-icon="icon:play;ratio:.8"></span> Attiva
-                </button>
-                <?php else: ?>
-                <input type="hidden" name="_action" value="close">
-                <button class="uk-button uk-button-small"
-                        style="background:#e74c3c;color:#fff;border-color:#e74c3c">
-                    <span uk-icon="icon:ban;ratio:.8"></span> Chiudi
-                </button>
-                <?php endif ?>
-            </form>
+    <!-- Active categories with advancement summary -->
+    <?php if (!empty($roundCats)): ?>
+    <div class="e-pipeline-cats">
+        <?php foreach ($roundCats as $cat):
+            $mode  = $cat['advancement_mode'] ?? 'manual';
+            $count = $cat['advancement_count'] ?? null;
+            $advLabel = match($mode) {
+                'auto'   => 'top ' . ($count ?? '?') . ' avanzano',
+                'all'    => 'tutti avanzano',
+                'none'   => 'nessuno avanza',
+                default  => 'avanzamento manuale',
+            };
+        ?>
+        <div class="e-pipeline-cat">
+            <span class="e-pipeline-cat-name"><?= htmlspecialchars($cat['name']) ?></span>
+            <?php if (!$isLast): ?>
+            <span class="e-pipeline-cat-adv e-pipeline-adv-<?= $mode ?>"><?= $advLabel ?></span>
             <?php endif ?>
-
-            <!-- Delete (right-aligned) -->
-            <form method="post" style="display:inline;margin:0 0 0 auto">
-                <?= Csrf::field() ?>
-                <input type="hidden" name="_action" value="delete">
-                <input type="hidden" name="round_id" value="<?= $round['id'] ?>">
-                <button class="uk-button uk-button-link uk-button-small"
-                        style="color:#c8c3e0"
-                        data-confirm="<?= htmlspecialchars(__('confirm_delete')) ?>">
-                    <?= __('delete') ?>
-                </button>
-            </form>
-
         </div>
+        <?php endforeach ?>
+    </div>
+    <?php endif ?>
 
-        <!-- Active voting link -->
-        <?php if ($round['status'] === 'active' && $event['status'] === 'active'): ?>
-        <div style="margin-top:12px;padding:10px 14px;background:#f0fdf4;border-radius:8px;display:flex;align-items:center;gap:10px">
-            <span style="font-size:.75rem;color:#27ae60;font-weight:600">&#9679; VOTO APERTO</span>
-            <code style="font-size:.78rem;color:#27ae60;flex:1"><?= htmlspecialchars($voteUrl) ?></code>
-            <button onclick="navigator.clipboard.writeText('<?= htmlspecialchars($voteUrl, ENT_QUOTES) ?>');this.textContent='Copiato!';setTimeout(()=>this.textContent='Copia',1500)"
-                    class="uk-button uk-button-small" style="background:#27ae60;color:#fff;border:none;padding:4px 12px;border-radius:6px;font-size:.75rem">
-                Copia
+    <!-- Active voting banner -->
+    <?php if ($round['status'] === 'active' && $event['status'] === 'active'): ?>
+    <div style="margin-top:12px;padding:8px 12px;background:#f0fdf4;border-radius:8px;display:flex;align-items:center;gap:10px">
+        <span style="font-size:.72rem;color:#27ae60;font-weight:700">● VOTO APERTO</span>
+        <code style="font-size:.75rem;color:#27ae60;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+            <?= htmlspecialchars($voteUrl) ?>
+        </code>
+        <button onclick="navigator.clipboard.writeText('<?= htmlspecialchars($voteUrl, ENT_QUOTES) ?>');this.textContent='Copiato!';setTimeout(()=>this.textContent='Copia',1500)"
+                style="background:#27ae60;color:#fff;border:none;padding:3px 10px;border-radius:6px;font-size:.72rem;cursor:pointer;flex-shrink:0">
+            Copia
+        </button>
+    </div>
+    <?php endif ?>
+
+    <!-- Actions -->
+    <div class="uk-flex uk-flex-wrap" style="gap:6px;margin-top:14px;padding-top:12px;border-top:1px solid #f5f3ff">
+        <a href="/admin/candidates.php?round_id=<?= $round['id'] ?>"
+           class="uk-button uk-button-default uk-button-small">Candidati</a>
+        <a href="/admin/results.php?round_id=<?= $round['id'] ?>"
+           class="uk-button uk-button-default uk-button-small">
+            Risultati<?= $round['results_released'] ? ' 🌍' : '' ?>
+        </a>
+        <a href="/admin/rounds-edit.php?id=<?= $round['id'] ?>&event_id=<?= $eventId ?>"
+           class="uk-button uk-button-default uk-button-small"><?= __('edit') ?></a>
+
+        <?php if (in_array($round['status'], ['draft','active'], true)): ?>
+        <form method="post" style="display:inline;margin:0">
+            <?= Csrf::field() ?>
+            <input type="hidden" name="round_id" value="<?= $round['id'] ?>">
+            <?php if ($round['status'] === 'draft'): ?>
+            <input type="hidden" name="_action" value="activate">
+            <button class="uk-button uk-button-primary uk-button-small">
+                <span uk-icon="icon:play;ratio:.75"></span> Attiva
             </button>
-        </div>
+            <?php else: ?>
+            <input type="hidden" name="_action" value="close">
+            <button class="uk-button uk-button-small"
+                    style="background:#e74c3c;color:#fff;border-color:#e74c3c">
+                <span uk-icon="icon:ban;ratio:.75"></span> Chiudi
+            </button>
+            <?php endif ?>
+        </form>
         <?php endif ?>
 
+        <form method="post" style="display:inline;margin:0 0 0 auto">
+            <?= Csrf::field() ?>
+            <input type="hidden" name="_action" value="delete">
+            <input type="hidden" name="round_id" value="<?= $round['id'] ?>">
+            <button class="uk-button uk-button-link uk-button-small" style="color:#ddd"
+                    data-confirm="<?= htmlspecialchars(__('confirm_delete')) ?>">
+                <?= __('delete') ?>
+            </button>
+        </form>
     </div>
-    <?php endforeach ?>
+
+</div>
+
+<?php if (!$isLast): ?>
+<!-- Arrow between phases -->
+<div class="e-pipeline-arrow">
+    <div class="e-pipeline-arrow-line"></div>
+    <div class="e-pipeline-arrow-head">▼</div>
 </div>
 <?php endif ?>
 
-<!-- Categories quick link -->
-<div class="uk-margin-medium-top uk-flex uk-flex-right">
-    <a href="/admin/categories.php?event_id=<?= $eventId ?>"
-       class="uk-button uk-button-default uk-button-small">
-        <span uk-icon="icon:tag;ratio:.85"></span>
-        Gestisci categorie (<?= $categoriesCount ?>)
+<?php endforeach ?>
+
+<!-- Add phase -->
+<div class="e-pipeline-add">
+    <a href="/admin/rounds-edit.php?event_id=<?= $eventId ?><?= !empty($rounds) ? '&parent_round_id=' . end($rounds)['id'] : '' ?>"
+       class="uk-button uk-button-primary uk-button-small">
+        <span uk-icon="plus-circle"></span> Aggiungi fase
     </a>
 </div>
+
+</div><!-- /e-pipeline -->
+<?php endif ?>
 
 <?php
 $content = ob_get_clean();

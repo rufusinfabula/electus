@@ -6,6 +6,11 @@
     <title><?= htmlspecialchars($pageTitle ?? __('app_name')) ?> — <?= __('app_name') ?></title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3/dist/css/uikit.min.css">
     <link rel="stylesheet" href="/assets/css/app.css">
+    <?php
+    $__adminTheme = \Electus\Models\Settings::get('admin_theme', \Electus\Core\Theme::DEFAULT_PRESET);
+    $__adminPal   = \Electus\Core\Theme::PALETTES[$__adminTheme] ?? \Electus\Core\Theme::PALETTES[\Electus\Core\Theme::DEFAULT_PRESET];
+    echo \Electus\Core\Theme::cssBlock($__adminPal);
+    ?>
 </head>
 <body>
 
@@ -51,7 +56,7 @@
 
     <!-- Sidebar -->
     <div class="e-sidebar">
-        <ul class="uk-nav uk-nav-default e-nav">
+        <ul class="uk-nav uk-nav-default e-nav" uk-nav>
             <li class="uk-nav-header">Menu</li>
 
             <li <?= ($activeMenu ?? '') === 'dashboard' ? 'class="uk-active"' : '' ?>>
@@ -66,41 +71,98 @@
             </li>
 
             <?php if (!empty($currentEventId)):
-                // Load event name if not passed by the page
                 if (empty($currentEventName)) {
                     $__stmt = \Electus\Core\Database::get()->prepare('SELECT name FROM events WHERE id = ? LIMIT 1');
                     $__stmt->execute([$currentEventId]);
                     $currentEventName = $__stmt->fetchColumn() ?: '';
                 }
+                // Load all rounds for accordion
+                $__stmt = \Electus\Core\Database::get()->prepare(
+                    'SELECT id, round_number, label, status FROM event_rounds
+                     WHERE event_id = ? ORDER BY round_number ASC'
+                );
+                $__stmt->execute([$currentEventId]);
+                $__rounds = $__stmt->fetchAll();
+
+                // Resolve sidebar round: prefer active, then first
+                $__sidebarRoundId = (int) ($currentRoundId ?? 0);
+                if (!$__sidebarRoundId && !empty($__rounds)) {
+                    foreach ($__rounds as $__r) {
+                        if ($__r['status'] === 'active') { $__sidebarRoundId = (int) $__r['id']; break; }
+                    }
+                    if (!$__sidebarRoundId) $__sidebarRoundId = (int) $__rounds[0]['id'];
+                }
+                $__activeMenu = $activeMenu ?? '';
             ?>
-            <li class="uk-nav-header" style="white-space:normal;line-height:1.3;padding-top:14px">
-                <a href="/admin/rounds.php?event_id=<?= $currentEventId ?>"
-                   style="color:var(--e-primary);font-weight:700;font-size:.78rem;text-transform:none;letter-spacing:0;display:block;padding:0 12px">
+
+            <!-- Event name (plain li, not uk-nav-header to avoid forced uppercase) -->
+            <li class="e-nav-event-title">
+                <a href="/admin/rounds.php?event_id=<?= $currentEventId ?>">
                     <?= htmlspecialchars($currentEventName) ?>
                 </a>
             </li>
-            <li class="uk-nav-sub-item <?= ($activeMenu ?? '') === 'rounds' ? 'uk-active' : '' ?>">
+
+            <!-- Event-level items -->
+            <li class="<?= $__activeMenu === 'rounds' ? 'uk-active' : '' ?>">
                 <a href="/admin/rounds.php?event_id=<?= $currentEventId ?>">
-                    <span uk-icon="grid"></span> Panoramica
+                    <span uk-icon="icon:grid;ratio:.85"></span> Panoramica
                 </a>
             </li>
-            <li class="uk-nav-sub-item <?= ($activeMenu ?? '') === 'categories' ? 'uk-active' : '' ?>">
+            <li class="<?= $__activeMenu === 'categories' ? 'uk-active' : '' ?>">
                 <a href="/admin/categories.php?event_id=<?= $currentEventId ?>">
-                    <span uk-icon="tag"></span> <?= __('categories_title') ?>
+                    <span uk-icon="icon:tag;ratio:.85"></span> <?= __('categories_title') ?>
                 </a>
             </li>
-            <li class="uk-nav-sub-item <?= ($activeMenu ?? '') === 'voters' ? 'uk-active' : '' ?>">
+            <li class="<?= $__activeMenu === 'voters' ? 'uk-active' : '' ?>">
                 <a href="/admin/voters.php?event_id=<?= $currentEventId ?>">
-                    <span uk-icon="users"></span> <?= __('voters_title') ?>
+                    <span uk-icon="icon:users;ratio:.85"></span> <?= __('voters_title') ?>
                 </a>
             </li>
+
+            <?php if (!empty($__rounds)): ?>
+            <li class="e-nav-section-header">Turni</li>
+            <?php foreach ($__rounds as $__r):
+                $__rOpen = ($__sidebarRoundId === (int) $__r['id']);
+                $__candActive = $__activeMenu === 'candidates' && $__rOpen;
+                $__resActive  = $__activeMenu === 'results'    && $__rOpen;
+                $__statusDot  = ['active' => '#27ae60', 'closed' => '#9a94b8', 'draft' => '#c8c3e0'][$__r['status']] ?? '#c8c3e0';
+            ?>
+            <li class="uk-parent <?= $__rOpen ? 'uk-open' : '' ?> e-nav-round-item">
+                <a href="#">
+                    <span class="e-nav-round-dot" style="background:<?= $__statusDot ?>"></span>
+                    <span class="e-nav-round-label">
+                        <?= __('round_number') ?><?= $__r['round_number'] ?>
+                        <?php if ($__r['label']): ?>
+                        <span class="e-nav-round-sub"><?= htmlspecialchars($__r['label']) ?></span>
+                        <?php endif ?>
+                    </span>
+                </a>
+                <ul class="uk-nav-sub">
+                    <li <?= $__candActive ? 'class="uk-active"' : '' ?>>
+                        <a href="/admin/candidates.php?round_id=<?= $__r['id'] ?>">
+                            <span uk-icon="icon:list;ratio:.8"></span> Candidati
+                        </a>
+                    </li>
+                    <li <?= $__resActive ? 'class="uk-active"' : '' ?>>
+                        <a href="/admin/results.php?round_id=<?= $__r['id'] ?>">
+                            <span uk-icon="icon:bar-chart;ratio:.8"></span> Risultati
+                        </a>
+                    </li>
+                </ul>
+            </li>
+            <?php endforeach ?>
+            <?php endif ?>
+
             <?php endif ?>
 
             <?php if (\Electus\Core\Auth::hasRole('superadmin')): ?>
             <li class="uk-nav-divider"></li>
             <li class="uk-nav-header"><?= __('nav_settings') ?></li>
             <li <?= ($activeMenu ?? '') === 'users' ? 'class="uk-active"' : '' ?>>
-                <a href="/admin/users.php"><span uk-icon="cog"></span> <?= __('users_title') ?></a>
+                <a href="/admin/users.php"><span uk-icon="icon:users;ratio:.85"></span> <?= __('users_title') ?></a>
+            </li>
+            <li <?= ($activeMenu ?? '') === 'settings' ? 'class="uk-active"' : '' ?>>
+                <a href="/admin/settings.php"><span uk-icon="icon:paint-bucket;ratio:.85"></span> Tema admin</a>
             </li>
             <?php endif ?>
         </ul>

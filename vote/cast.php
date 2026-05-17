@@ -76,7 +76,7 @@ if (!$round) {
     exit;
 }
 
-$categories          = Category::forEvent((int) $event['id']);
+$categories          = Category::forRound((int) $round['id']);
 $candidatesByCategory = [];
 foreach ($categories as $cat) {
     $candidatesByCategory[$cat['id']] = Candidate::forRoundAndCategory((int) $round['id'], (int) $cat['id']);

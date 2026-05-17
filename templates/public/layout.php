@@ -6,6 +6,9 @@
     <title><?= htmlspecialchars($pageTitle ?? __('app_name')) ?></title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3/dist/css/uikit.min.css">
     <link rel="stylesheet" href="/assets/css/app.css">
+    <?php if (!empty($event)):
+        echo \Electus\Core\Theme::cssBlock(\Electus\Core\Theme::forEvent($event, $config ?? []));
+    endif ?>
 </head>
 <body class="e-public-body">
 

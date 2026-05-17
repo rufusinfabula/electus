@@ -9,6 +9,7 @@ use Electus\Core\Csrf;
 use Electus\Core\Flash;
 use Electus\Models\Candidate;
 use Electus\Models\Category;
+use Electus\Models\Deduplication;
 use Electus\Models\Event;
 use Electus\Models\Round;
 
@@ -20,7 +21,7 @@ $eventId = (int) $round['event_id'];
 $event   = Event::find($eventId);
 Auth::requireEventPermission($eventId);
 
-$categories = Category::forEvent($eventId);
+$categories = Category::forRound($roundId);
 
 // POST actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -69,17 +70,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    if ($action === 'manual_merge') {
+        $sourceId = (int) ($_POST['source_id'] ?? 0);
+        $targetId = (int) ($_POST['target_id'] ?? 0);
+        $override = trim($_POST['canonical_override'] ?? '');
+        if ($sourceId && $targetId && $sourceId !== $targetId) {
+            Deduplication::manualMerge($sourceId, $targetId, $roundId, (int) Auth::currentUser()['id'], $override);
+            Flash::success('Candidature unite correttamente.');
+        }
+    }
+
     header('Location: /admin/candidates.php?round_id=' . $roundId);
     exit;
 }
 
 $candidates     = Candidate::forRound($roundId, 'active');
 $excluded       = Candidate::forRound($roundId, 'excluded');
+$merged         = Candidate::forRound($roundId, 'merged');
 $isOpen         = $round['model'] === 'open';
 
 $pageTitle      = __('candidates_title');
-$activeMenu     = 'rounds';
+$activeMenu     = 'candidates';
 $currentEventId = $eventId;
+$currentRoundId = $roundId;
 
 // Group candidates by category
 $byCategory = [];
@@ -105,7 +118,7 @@ ob_start();
         </div>
     </div>
     <?php if ($round['model'] === 'open'): ?>
-    <a href="/admin/dedup.php?round_id=<?= $roundId ?>" class="uk-button uk-button-default uk-button-small">
+    <a href="/admin/results.php?round_id=<?= $roundId ?>&tab=review" class="uk-button uk-button-default uk-button-small">
         <?= __('dedup_title') ?>
     </a>
     <?php endif ?>
@@ -124,8 +137,9 @@ ob_start();
 
         <?php if ($isOpen): ?>
         <div class="uk-alert-primary" uk-alert>
-            <p>This is an <strong>open round</strong>. Candidates emerge from voter input. Use the
-               <a href="/admin/dedup.php?round_id=<?= $roundId ?>">Deduplication queue</a> to review them.</p>
+            <p>This is an <strong>open round</strong>. Candidates emerge from voter input. Use
+               <a href="/admin/results.php?round_id=<?= $roundId ?>&tab=review">Candidate review</a> to handle duplicates,
+               or use the <strong>merge</strong> button on any candidate below to merge it manually.</p>
         </div>
         <?php endif ?>
 
@@ -160,11 +174,17 @@ ob_start();
                             </span>
                             <?php endif ?>
                         </td>
-                        <td style="width:90px">
+                        <td style="width:<?= $isOpen ? '110' : '90' ?>px">
                             <div class="uk-flex" style="gap:6px">
                                 <?php if (!$isOpen): ?>
                                 <a href="#modal-cand-edit-<?= $cand['id'] ?>" uk-toggle
                                    uk-icon="icon:pencil;ratio:.8" class="uk-icon-link"></a>
+                                <?php endif ?>
+                                <?php if ($isOpen && count($catCandidates) > 1): ?>
+                                <a href="#modal-merge-<?= $cand['id'] ?>" uk-toggle
+                                   uk-icon="icon:git-fork;ratio:.8"
+                                   uk-tooltip="Unisci a un'altra candidatura"
+                                   class="uk-icon-link" style="color:var(--e-primary)"></a>
                                 <?php endif ?>
                                 <form method="post" style="display:inline">
                                     <?= Csrf::field() ?>
@@ -211,6 +231,48 @@ ob_start();
                     </div>
                     <?php endif ?>
 
+                    <?php if ($isOpen && count($catCandidates) > 1): ?>
+                    <!-- Manual merge modal -->
+                    <div id="modal-merge-<?= $cand['id'] ?>" uk-modal>
+                        <div class="uk-modal-dialog uk-modal-body">
+                            <button class="uk-modal-close-default" type="button" uk-close></button>
+                            <h3 class="uk-modal-title" style="font-size:1rem">Unisci candidatura</h3>
+                            <p style="font-size:.875rem;color:#9a94b8;margin-bottom:16px">
+                                Unisci <strong><?= htmlspecialchars($cand['name']) ?></strong> a un'altra candidatura.
+                                I voti verranno spostati sul candidato di destinazione.
+                            </p>
+                            <form method="post">
+                                <?= Csrf::field() ?>
+                                <input type="hidden" name="_action" value="manual_merge">
+                                <input type="hidden" name="source_id" value="<?= $cand['id'] ?>">
+                                <div class="uk-margin">
+                                    <label class="uk-form-label">Unisci in</label>
+                                    <select class="uk-select" name="target_id" required>
+                                        <option value="">— Seleziona —</option>
+                                        <?php foreach ($catCandidates as $sibling):
+                                            if ($sibling['id'] === $cand['id']) continue; ?>
+                                        <option value="<?= $sibling['id'] ?>">
+                                            <?= htmlspecialchars($sibling['name']) ?>
+                                        </option>
+                                        <?php endforeach ?>
+                                    </select>
+                                </div>
+                                <div class="uk-margin">
+                                    <label class="uk-form-label">
+                                        Nome canonico (opzionale — rinomina il candidato di destinazione)
+                                    </label>
+                                    <input class="uk-input" type="text" name="canonical_override"
+                                           placeholder="Lascia vuoto per mantenere il nome esistente">
+                                </div>
+                                <div class="uk-flex uk-margin-top" style="gap:8px">
+                                    <button class="uk-button uk-button-primary">Unisci</button>
+                                    <button type="button" class="uk-button uk-button-default uk-modal-close">Annulla</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    <?php endif ?>
+
                     <?php endforeach ?>
                 </tbody>
             </table>
@@ -250,11 +312,11 @@ ob_start();
 
 </div>
 
-<!-- Excluded candidates -->
-<?php if (!empty($excluded)): ?>
+<!-- Excluded / merged candidates -->
+<?php if (!empty($excluded) || !empty($merged)): ?>
 <details class="uk-margin-top" style="cursor:pointer">
     <summary style="color:#9a94b8;font-size:.85rem">
-        <?= count($excluded) ?> excluded candidate(s)
+        <?= count($excluded) + count($merged) ?> candidature escluse o unite
     </summary>
     <div class="e-table uk-margin-small-top">
         <table class="uk-table uk-table-small uk-table-divider uk-margin-remove">
@@ -263,14 +325,23 @@ ob_start();
                 <tr>
                     <td style="color:#9a94b8"><?= htmlspecialchars($cand['name']) ?></td>
                     <td style="color:#9a94b8"><?= htmlspecialchars($cand['category_name']) ?></td>
+                    <td><span class="e-badge e-badge-closed">Esclusa</span></td>
                     <td>
                         <form method="post" style="display:inline">
                             <?= Csrf::field() ?>
                             <input type="hidden" name="_action" value="restore">
                             <input type="hidden" name="id" value="<?= $cand['id'] ?>">
-                            <button class="uk-button uk-button-link uk-button-small">Restore</button>
+                            <button class="uk-button uk-button-link uk-button-small">Ripristina</button>
                         </form>
                     </td>
+                </tr>
+                <?php endforeach ?>
+                <?php foreach ($merged as $cand): ?>
+                <tr>
+                    <td style="color:#9a94b8"><?= htmlspecialchars($cand['name']) ?></td>
+                    <td style="color:#9a94b8"><?= htmlspecialchars($cand['category_name']) ?></td>
+                    <td><span class="e-badge" style="background:#f0eeff;color:#6b52d4">Unita</span></td>
+                    <td style="color:#9a94b8;font-size:.8rem">—</td>
                 </tr>
                 <?php endforeach ?>
             </tbody>

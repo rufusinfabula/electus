@@ -16,6 +16,15 @@ class Category
         return $stmt->fetchAll();
     }
 
+    /**
+     * Categories active in a round, with advancement settings from round_category_map.
+     * Delegates to Round::categoriesFor() for consistency.
+     */
+    public static function forRound(int $roundId): array
+    {
+        return \Electus\Models\Round::categoriesFor($roundId);
+    }
+
     public static function find(int $id): ?array
     {
         $pdo  = Database::get();

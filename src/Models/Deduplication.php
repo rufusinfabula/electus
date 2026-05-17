@@ -222,6 +222,78 @@ class Deduplication
         }
     }
 
+    /**
+     * Manual merge: admin directly selects source and target without a queue entry.
+     * Moves votes, marks source merged, saves alias, closes any open queue entry.
+     */
+    public static function manualMerge(
+        int $sourceCandidateId,
+        int $targetCandidateId,
+        int $roundId,
+        int $reviewedBy,
+        string $canonicalOverride = ''
+    ): void {
+        $pdo = Database::get();
+        $pdo->beginTransaction();
+        try {
+            // Source info
+            $stmt = $pdo->prepare('SELECT canonical_name, category_id FROM candidates WHERE id = ?');
+            $stmt->execute([$sourceCandidateId]);
+            $source = $stmt->fetch();
+            if (!$source) throw new \RuntimeException('Source candidate not found.');
+
+            // Optional rename of target
+            if ($canonicalOverride !== '') {
+                $newNorm = Candidate::normalize($canonicalOverride);
+                $pdo->prepare('UPDATE candidates SET name = ?, canonical_name = ? WHERE id = ?')
+                    ->execute([$canonicalOverride, $newNorm, $targetCandidateId]);
+            }
+
+            // Target info (after possible rename)
+            $stmt = $pdo->prepare(
+                'SELECT c.canonical_name, c.category_id, er.event_id
+                 FROM candidates c JOIN event_rounds er ON er.id = c.round_id
+                 WHERE c.id = ? LIMIT 1'
+            );
+            $stmt->execute([$targetCandidateId]);
+            $target = $stmt->fetch();
+            if (!$target) throw new \RuntimeException('Target candidate not found.');
+
+            // Move votes
+            $pdo->prepare('UPDATE votes SET candidate_id = ? WHERE candidate_id = ? AND round_id = ?')
+                ->execute([$targetCandidateId, $sourceCandidateId, $roundId]);
+
+            // Mark source merged
+            $pdo->prepare("UPDATE candidates SET status = 'merged' WHERE id = ?")
+                ->execute([$sourceCandidateId]);
+
+            // Save alias
+            $pdo->prepare(
+                'INSERT IGNORE INTO candidate_aliases
+                 (event_id, category_id, alias, canonical_name, created_by)
+                 VALUES (?, ?, ?, ?, ?)'
+            )->execute([
+                $target['event_id'],
+                $source['category_id'],
+                $source['canonical_name'],
+                $target['canonical_name'],
+                $reviewedBy,
+            ]);
+
+            // Close any open dedup queue entry for this source
+            $pdo->prepare(
+                "UPDATE dedup_queue
+                 SET status = 'merged', reviewed_by = ?, reviewed_at = NOW()
+                 WHERE round_id = ? AND normalized_input = ? AND status = 'pending'"
+            )->execute([$reviewedBy, $roundId, $source['canonical_name']]);
+
+            $pdo->commit();
+        } catch (\Throwable $e) {
+            $pdo->rollBack();
+            throw $e;
+        }
+    }
+
     public static function keep(int $queueId, int $reviewedBy): void
     {
         $pdo  = Database::get();

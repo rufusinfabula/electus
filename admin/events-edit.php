@@ -7,6 +7,7 @@ require __DIR__ . '/bootstrap.php';
 use Electus\Core\Auth;
 use Electus\Core\Csrf;
 use Electus\Core\Flash;
+use Electus\Core\Theme;
 use Electus\Models\Event;
 
 $id    = (int) ($_GET['id'] ?? 0);
@@ -36,6 +37,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'email_verification' => isset($_POST['email_verification']) ? 1 : 0,
         'results_public'     => isset($_POST['results_public']) ? 1 : 0,
         'status'             => $_POST['status'] ?? 'draft',
+        'theme_preset'       => $_POST['theme_preset'] ?? null,
+        'theme_colors'       => json_encode(array_filter([
+            'primary'   => trim($_POST['theme_primary']   ?? ''),
+            'secondary' => trim($_POST['theme_secondary'] ?? ''),
+            'accent'    => trim($_POST['theme_accent']    ?? ''),
+            'bg'        => trim($_POST['theme_bg']        ?? ''),
+            'text'      => trim($_POST['theme_text']      ?? ''),
+        ])) ?: null,
     ];
 
     // Validation
@@ -180,6 +189,84 @@ ob_start();
                 <p class="uk-text-small uk-text-muted uk-margin-remove-top">
                     Results are always published manually per round, using the "Publish results" button on the Results page.
                 </p>
+            </div>
+
+            <hr class="uk-width-1-1">
+
+            <!-- Theme picker -->
+            <div class="uk-width-1-1">
+                <label class="uk-form-label" style="font-weight:700;font-size:.85rem">
+                    Tema grafico (pagine pubbliche di voto)
+                </label>
+                <p style="font-size:.78rem;color:#9a94b8;margin:2px 0 14px">
+                    Scegli la palette applicata alla scheda di voto e ai risultati pubblici.
+                    Il pannello admin mantiene sempre il tema predefinito.
+                </p>
+                <?php
+                $currentPreset = $event['theme_preset'] ?? null;
+                $currentColors = !empty($event['theme_colors'])
+                    ? (is_array($event['theme_colors']) ? $event['theme_colors'] : json_decode($event['theme_colors'], true))
+                    : [];
+                ?>
+                <div class="e-theme-grid">
+                <?php foreach (Theme::PALETTES as $key => $pal): ?>
+                <label class="e-theme-card <?= $currentPreset === $key ? 'e-theme-selected' : '' ?>">
+                    <input type="radio" name="theme_preset" value="<?= $key ?>"
+                           <?= $currentPreset === $key ? 'checked' : '' ?>
+                           style="position:absolute;opacity:0;pointer-events:none">
+                    <!-- Mini preview -->
+                    <div class="e-theme-preview" style="background:<?= htmlspecialchars($pal['bg']) ?>">
+                        <div class="e-theme-preview-bar" style="background:<?= htmlspecialchars($pal['primary']) ?>">
+                            <span style="color:#fff;font-size:9px;font-weight:700;padding:0 6px">
+                                <?= htmlspecialchars($pal['label']) ?>
+                            </span>
+                        </div>
+                        <div style="padding:6px 8px;display:flex;gap:4px;flex-wrap:wrap">
+                            <span style="background:<?= htmlspecialchars($pal['primary']) ?>;color:#fff;border-radius:4px;padding:2px 6px;font-size:8px;font-weight:700">Vota</span>
+                            <span style="background:<?= htmlspecialchars($pal['accent']) ?>;color:#111;border-radius:4px;padding:2px 6px;font-size:8px;font-weight:700">OK</span>
+                        </div>
+                        <div style="padding:0 8px 6px;display:flex;gap:3px">
+                            <div style="height:5px;border-radius:3px;flex:2;background:<?= htmlspecialchars($pal['primary']) ?>"></div>
+                            <div style="height:5px;border-radius:3px;flex:1;background:<?= htmlspecialchars($pal['secondary']) ?>"></div>
+                        </div>
+                    </div>
+                    <div class="e-theme-label">
+                        <?= htmlspecialchars($pal['label']) ?>
+                        <div class="e-theme-swatches">
+                            <span style="background:<?= htmlspecialchars($pal['primary']) ?>"></span>
+                            <span style="background:<?= htmlspecialchars($pal['secondary']) ?>"></span>
+                            <span style="background:<?= htmlspecialchars($pal['accent']) ?>"></span>
+                            <span style="background:<?= htmlspecialchars($pal['bg']) ?>;border:1px solid #ddd"></span>
+                            <span style="background:<?= htmlspecialchars($pal['text']) ?>"></span>
+                        </div>
+                    </div>
+                </label>
+                <?php endforeach ?>
+                </div>
+
+                <!-- Custom color overrides -->
+                <details class="uk-margin-top" style="font-size:.82rem">
+                    <summary style="color:var(--e-primary);cursor:pointer;font-weight:600">
+                        Personalizza colori (opzionale — sovrascrive la palette selezionata)
+                    </summary>
+                    <div class="uk-grid-small uk-margin-small-top" uk-grid>
+                        <?php foreach (['primary'=>'Primary','secondary'=>'Secondary','accent'=>'Accent','bg'=>'Background','text'=>'Testo'] as $k => $lbl): ?>
+                        <div class="uk-width-1-5@m uk-width-1-3@s">
+                            <label class="uk-form-label" style="font-size:.75rem"><?= $lbl ?></label>
+                            <div style="display:flex;align-items:center;gap:6px">
+                                <input type="color" name="theme_<?= $k ?>"
+                                       value="<?= htmlspecialchars($currentColors[$k] ?? '') ?>"
+                                       style="width:36px;height:36px;border:none;background:none;cursor:pointer;padding:0">
+                                <input type="text" name="theme_<?= $k ?>"
+                                       class="uk-input uk-form-small"
+                                       value="<?= htmlspecialchars($currentColors[$k] ?? '') ?>"
+                                       placeholder="#000000"
+                                       style="font-family:monospace;width:90px">
+                            </div>
+                        </div>
+                        <?php endforeach ?>
+                    </div>
+                </details>
             </div>
 
         </div>

@@ -7,6 +7,7 @@ require ROOT . '/vendor/autoload.php';
 
 use Electus\Core\Database;
 use Electus\Core\Lang;
+use Electus\Core\Theme;
 use Electus\Models\Event;
 use Electus\Models\Results;
 use Electus\Models\Round;
@@ -16,8 +17,8 @@ if (!file_exists(ROOT . '/config/config.php')) {
     header('Location: /install/');
     exit;
 }
-require ROOT . '/config/config.php';
-Database::init(DB_HOST, DB_NAME, DB_USER, DB_PASS, DB_PORT ?? 3306);
+$cfg = require ROOT . '/config/config.php';
+Database::init($cfg['db']['host'], $cfg['db']['name'], $cfg['db']['user'], $cfg['db']['pass'], $cfg['db']['port'] ?? 3306);
 
 // Language
 session_start();
@@ -68,6 +69,7 @@ if (!$round || !$round['results_released']) {
     <title><?= htmlspecialchars($event['name']) ?> — <?= __('results_title') ?></title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3/dist/css/uikit.min.css">
     <link rel="stylesheet" href="/assets/css/app.css">
+    <?php echo Theme::cssBlock(Theme::forEvent($event, $cfg)); ?>
 </head>
 <body class="e-public-body">
 <header class="e-public-header">
@@ -118,6 +120,7 @@ $chartInits = '';
     <title><?= htmlspecialchars($event['name']) ?> — <?= __('results_title') ?></title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3/dist/css/uikit.min.css">
     <link rel="stylesheet" href="/assets/css/app.css">
+    <?php echo Theme::cssBlock(Theme::forEvent($event, $cfg)); ?>
 </head>
 <body class="e-public-body">
 

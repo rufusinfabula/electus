@@ -280,6 +280,104 @@
     color: var(--e-primary);
 }
 
+/* ── Sidebar — event context ────────────────────────────────────────────────── */
+
+/* Divider between global nav and event context */
+.e-nav-event-title {
+    margin-top: 12px;
+    padding: 6px 12px 2px;
+    border-top: 1px solid #ece9f5;
+}
+
+.e-nav-event-title > a {
+    display: block;
+    font-size: .78rem;
+    font-weight: 700;
+    color: var(--e-primary);
+    line-height: 1.4;
+    white-space: normal;
+    text-decoration: none;
+}
+
+.e-nav-event-title > a:hover {
+    text-decoration: underline;
+}
+
+/* Small section label ("Turni") */
+.e-nav-section-header {
+    padding: 10px 12px 2px;
+    font-size: .67rem;
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: #c8c3e0;
+    list-style: none;
+}
+
+/* Round accordion toggle */
+.e-nav > li.e-nav-round-item > a {
+    padding: 6px 12px;
+    font-size: .82rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.e-nav-round-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.e-nav-round-label {
+    flex: 1;
+    font-weight: 600;
+    color: #4a4568;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    line-height: 1.3;
+}
+
+.e-nav-round-sub {
+    font-weight: 400;
+    font-size: .74rem;
+    color: #9a94b8;
+}
+
+/* Sub-items inside round accordion */
+/* CSS controls initial visibility so items are never hidden before UIkit JS initializes */
+.e-nav .uk-nav-sub {
+    padding: 0 0 4px 0;
+    display: none;
+}
+
+.e-nav li.uk-open > .uk-nav-sub {
+    display: block;
+}
+
+.e-nav .uk-nav-sub > li > a {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 5px 12px 5px 26px;
+    font-size: .8rem;
+    color: #6b6494;
+    border-radius: 6px;
+    transition: background .15s, color .15s;
+}
+
+.e-nav .uk-nav-sub > li > a:hover,
+.e-nav .uk-nav-sub > li.uk-active > a {
+    background: var(--e-bg);
+    color: var(--e-primary);
+}
+
+.e-nav .uk-nav-sub > li.uk-active > a {
+    font-weight: 600;
+}
+
 /* ── Dedup score colours ────────────────────────────────────────────────────── */
 .e-score-high   { color: #e74c3c; font-weight: 800; }
 .e-score-medium { color: #f39c12; font-weight: 800; }
@@ -317,6 +415,111 @@
     background: #f0eeff;
 }
 
+/* ── Pipeline editor ────────────────────────────────────────────────────────── */
+.e-pipeline {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+}
+
+.e-pipeline-block {
+    padding: 20px 24px;
+    position: relative;
+}
+
+.e-pipeline-number {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--e-primary);
+    color: #fff;
+    font-size: .78rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.e-pipeline-cats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid #f5f3ff;
+}
+
+.e-pipeline-cat {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--e-bg);
+    border: 1px solid #ece9f5;
+    border-radius: 20px;
+    padding: 3px 10px;
+    font-size: .78rem;
+}
+
+.e-pipeline-cat-name {
+    font-weight: 600;
+    color: var(--e-text);
+}
+
+.e-pipeline-cat-adv {
+    font-size: .7rem;
+    padding: 1px 6px;
+    border-radius: 10px;
+}
+
+.e-pipeline-adv-auto   { background: #e6f9ee; color: #1a7a3c; }
+.e-pipeline-adv-all    { background: #e6f9ee; color: #1a7a3c; }
+.e-pipeline-adv-none   { background: #f5f5f5; color: #999; }
+.e-pipeline-adv-manual { background: #f0eeff; color: #6b52d4; }
+
+/* Arrow connector between phases */
+.e-pipeline-arrow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 4px 0;
+    gap: 0;
+    color: #c8c3e0;
+    font-size: .72rem;
+    font-weight: 600;
+}
+
+.e-pipeline-arrow-line {
+    width: 2px;
+    height: 20px;
+    background: #ece9f5;
+}
+
+.e-pipeline-arrow-head {
+    font-size: .8rem;
+    color: #c8c3e0;
+    line-height: 1;
+    margin-top: -2px;
+}
+
+/* Add phase button area */
+.e-pipeline-add {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px 0 4px;
+    gap: 8px;
+}
+
+.e-pipeline-add::before {
+    content: '';
+    display: block;
+    width: 2px;
+    height: 20px;
+    background: #ece9f5;
+}
+
 /* ── Borda point rows ───────────────────────────────────────────────────────── */
 .e-borda-row {
     padding: 10px 0;
@@ -326,4 +529,64 @@
 
 .e-borda-row:last-child {
     border-bottom: none;
+}
+
+/* ── Theme picker ───────────────────────────────────────────────────────────── */
+.e-theme-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 10px;
+    margin-bottom: 4px;
+}
+
+.e-theme-card {
+    position: relative;
+    border: 2px solid #ece9f5;
+    border-radius: 10px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color .15s, box-shadow .15s;
+    background: #fff;
+}
+
+.e-theme-card:hover {
+    border-color: var(--e-primary);
+    box-shadow: 0 2px 8px rgba(79,70,229,.12);
+}
+
+.e-theme-selected {
+    border-color: var(--e-primary);
+    box-shadow: 0 0 0 3px rgba(79,70,229,.18);
+}
+
+.e-theme-preview {
+    height: 68px;
+    overflow: hidden;
+}
+
+.e-theme-preview-bar {
+    height: 16px;
+    display: flex;
+    align-items: center;
+}
+
+.e-theme-label {
+    padding: 6px 8px;
+    font-size: .72rem;
+    font-weight: 600;
+    color: #3d3557;
+    line-height: 1.3;
+}
+
+.e-theme-swatches {
+    display: flex;
+    gap: 3px;
+    margin-top: 4px;
+}
+
+.e-theme-swatches span {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
 }
