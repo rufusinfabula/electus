@@ -32,61 +32,113 @@ $activeMenu = 'settings';
 ob_start();
 ?>
 
-<div class="uk-flex uk-flex-middle uk-margin-bottom" style="gap:12px">
-    <h1 class="e-page-title uk-margin-remove">Impostazioni sistema</h1>
-</div>
+<h1 class="e-page-title">Impostazioni sistema</h1>
 
 <div class="e-card">
-    <form method="post">
+    <h3 style="font-size:1rem;font-weight:700;margin:0 0 4px">Tema pannello admin</h3>
+    <p style="font-size:.82rem;color:#9a94b8;margin:0 0 24px">
+        Seleziona la palette di colori per tutte le pagine del pannello di amministrazione.
+        Il tema si applica immediatamente dopo il salvataggio.
+    </p>
+
+    <form method="post" id="theme-form">
         <?= Csrf::field() ?>
+        <input type="hidden" name="admin_theme" id="admin_theme_input" value="<?= htmlspecialchars($currentPreset) ?>">
 
-        <h3 style="font-size:.9rem;font-weight:700;margin:0 0 4px">Tema pannello admin</h3>
-        <p style="font-size:.78rem;color:#9a94b8;margin:0 0 20px">
-            Scegli la palette di colori applicata a tutte le pagine del pannello di amministrazione.
-        </p>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px">
+        <?php foreach (Theme::PALETTES as $key => $pal):
+            $selected = ($currentPreset === $key);
+        ?>
+        <div class="e-tc" data-key="<?= $key ?>" onclick="selectTheme('<?= $key ?>')"
+             style="border:2px solid <?= $selected ? 'var(--e-primary)' : '#e8e6f0' ?>;
+                    border-radius:12px;overflow:hidden;cursor:pointer;
+                    background:#fff;transition:border-color .15s,box-shadow .15s;
+                    box-shadow:<?= $selected ? '0 0 0 3px rgba(76,61,158,.15)' : 'none' ?>">
 
-        <div class="e-theme-grid">
-        <?php foreach (Theme::PALETTES as $key => $pal): ?>
-        <label class="e-theme-card <?= $currentPreset === $key ? 'e-theme-selected' : '' ?>">
-            <input type="radio" name="admin_theme" value="<?= $key ?>"
-                   <?= $currentPreset === $key ? 'checked' : '' ?>
-                   style="position:absolute;opacity:0;pointer-events:none">
-            <div class="e-theme-preview" style="background:<?= htmlspecialchars($pal['bg']) ?>">
-                <div class="e-theme-preview-bar" style="background:<?= htmlspecialchars($pal['primary']) ?>">
-                    <span style="color:#fff;font-size:9px;font-weight:700;padding:0 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block">
-                        <?= htmlspecialchars($pal['label']) ?>
-                    </span>
+            <!-- Colour preview strip -->
+            <div style="height:56px;background:<?= htmlspecialchars($pal['bg']) ?>;position:relative">
+                <!-- Navbar bar -->
+                <div style="height:14px;background:<?= htmlspecialchars($pal['primary']) ?>;display:flex;align-items:center;padding:0 8px;gap:4px">
+                    <div style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.5)"></div>
+                    <div style="flex:1;height:3px;border-radius:2px;background:rgba(255,255,255,.3)"></div>
                 </div>
-                <div style="padding:6px 8px 4px;display:flex;gap:4px">
-                    <span style="background:<?= htmlspecialchars($pal['primary']) ?>;color:#fff;border-radius:4px;padding:2px 6px;font-size:8px;font-weight:700">Menu</span>
-                    <span style="background:<?= htmlspecialchars($pal['accent']) ?>;border-radius:4px;padding:2px 6px;font-size:8px;font-weight:700;color:<?= $pal['dark'] ? '#fff' : '#111' ?>">btn</span>
-                </div>
-                <div style="padding:0 8px 6px;display:flex;gap:3px">
-                    <div style="height:5px;border-radius:3px;flex:2;background:<?= htmlspecialchars($pal['primary']) ?>"></div>
-                    <div style="height:5px;border-radius:3px;flex:1;background:<?= htmlspecialchars($pal['secondary']) ?>"></div>
+                <!-- Fake content -->
+                <div style="padding:5px 8px;display:flex;gap:4px;align-items:center">
+                    <div style="width:28px;height:26px;border-radius:4px;background:<?= htmlspecialchars($pal['primary']) ?>;opacity:.15"></div>
+                    <div style="flex:1">
+                        <div style="height:4px;border-radius:2px;background:<?= htmlspecialchars($pal['text']) ?>;opacity:.2;margin-bottom:3px;width:70%"></div>
+                        <div style="height:3px;border-radius:2px;background:<?= htmlspecialchars($pal['text']) ?>;opacity:.1;width:50%"></div>
+                    </div>
+                    <div style="height:16px;padding:0 6px;border-radius:4px;background:<?= htmlspecialchars($pal['primary']) ?>;display:flex;align-items:center">
+                        <div style="height:2px;width:18px;border-radius:1px;background:#fff;opacity:.8"></div>
+                    </div>
                 </div>
             </div>
-            <div class="e-theme-label">
-                <?= htmlspecialchars($pal['label']) ?>
-                <div class="e-theme-swatches">
-                    <span style="background:<?= htmlspecialchars($pal['primary']) ?>"></span>
-                    <span style="background:<?= htmlspecialchars($pal['secondary']) ?>"></span>
-                    <span style="background:<?= htmlspecialchars($pal['accent']) ?>"></span>
-                    <span style="background:<?= htmlspecialchars($pal['bg']) ?>;border:1px solid #ddd"></span>
-                    <span style="background:<?= htmlspecialchars($pal['text']) ?>"></span>
+
+            <!-- Swatches + label -->
+            <div style="padding:10px 12px 12px">
+                <div style="display:flex;gap:5px;margin-bottom:8px;align-items:center">
+                    <div style="width:16px;height:16px;border-radius:50%;background:<?= htmlspecialchars($pal['primary']) ?>;flex-shrink:0" title="Primary"></div>
+                    <div style="width:16px;height:16px;border-radius:50%;background:<?= htmlspecialchars($pal['secondary']) ?>;flex-shrink:0" title="Secondary"></div>
+                    <div style="width:16px;height:16px;border-radius:50%;background:<?= htmlspecialchars($pal['accent']) ?>;flex-shrink:0" title="Accent"></div>
+                    <div style="width:16px;height:16px;border-radius:50%;background:<?= htmlspecialchars($pal['bg']) ?>;border:1px solid #ddd;flex-shrink:0" title="Background"></div>
+                    <?php if ($selected): ?>
+                    <div style="margin-left:auto;width:18px;height:18px;border-radius:50%;background:var(--e-primary);display:flex;align-items:center;justify-content:center;flex-shrink:0" id="check_<?= $key ?>">
+                        <span style="color:#fff;font-size:10px;font-weight:800">✓</span>
+                    </div>
+                    <?php else: ?>
+                    <div style="margin-left:auto;width:18px;height:18px;border-radius:50%;border:2px solid #e0ddf0;flex-shrink:0" id="check_<?= $key ?>"></div>
+                    <?php endif ?>
                 </div>
+                <div style="font-size:.78rem;font-weight:600;color:#2d2a40;line-height:1.3">
+                    <?= htmlspecialchars($pal['label']) ?>
+                </div>
+                <?php if ($pal['dark']): ?>
+                <div style="font-size:.68rem;color:#9a94b8;margin-top:2px">Tema scuro</div>
+                <?php endif ?>
             </div>
-        </label>
+        </div>
         <?php endforeach ?>
         </div>
 
-        <div class="uk-margin-top">
-            <button type="submit" class="uk-button uk-button-primary">
-                <span uk-icon="icon:check;ratio:.85"></span> Salva tema
-            </button>
-        </div>
+        <button type="submit" class="uk-button uk-button-primary">
+            <span uk-icon="icon:check;ratio:.85"></span> Salva tema
+        </button>
     </form>
 </div>
+
+<script>
+function selectTheme(key) {
+    // Update hidden input
+    document.getElementById('admin_theme_input').value = key;
+
+    // Reset all cards
+    document.querySelectorAll('.e-tc').forEach(function(card) {
+        card.style.borderColor = '#e8e6f0';
+        card.style.boxShadow   = 'none';
+        var k = card.dataset.key;
+        var chk = document.getElementById('check_' + k);
+        if (chk) {
+            chk.style.background = 'transparent';
+            chk.style.border     = '2px solid #e0ddf0';
+            chk.innerHTML        = '';
+        }
+    });
+
+    // Highlight selected card
+    var sel = document.querySelector('[data-key="' + key + '"]');
+    if (sel) {
+        sel.style.borderColor = 'var(--e-primary)';
+        sel.style.boxShadow   = '0 0 0 3px rgba(76,61,158,.15)';
+        var chk = document.getElementById('check_' + key);
+        if (chk) {
+            chk.style.background = 'var(--e-primary)';
+            chk.style.border     = 'none';
+            chk.innerHTML        = '<span style="color:#fff;font-size:10px;font-weight:800">✓</span>';
+        }
+    }
+}
+</script>
 
 <?php
 $content = ob_get_clean();
