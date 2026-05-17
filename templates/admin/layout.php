@@ -65,7 +65,20 @@
                 <a href="/admin/events.php"><span uk-icon="calendar"></span> <?= __('nav_events') ?></a>
             </li>
 
-            <?php if (!empty($currentEventId)): ?>
+            <?php if (!empty($currentEventId)):
+                // Load event name if not passed by the page
+                if (empty($currentEventName)) {
+                    $__stmt = \Electus\Core\Database::get()->prepare('SELECT name FROM events WHERE id = ? LIMIT 1');
+                    $__stmt->execute([$currentEventId]);
+                    $currentEventName = $__stmt->fetchColumn() ?: '';
+                }
+            ?>
+            <li class="uk-nav-header" style="white-space:normal;line-height:1.3;padding-top:14px">
+                <a href="/admin/rounds.php?event_id=<?= $currentEventId ?>"
+                   style="color:var(--e-primary);font-weight:700;font-size:.78rem;text-transform:none;letter-spacing:0;display:block;padding:0 12px">
+                    <?= htmlspecialchars($currentEventName) ?>
+                </a>
+            </li>
             <li class="uk-nav-sub-item <?= ($activeMenu ?? '') === 'rounds' ? 'uk-active' : '' ?>">
                 <a href="/admin/rounds.php?event_id=<?= $currentEventId ?>">
                     <span uk-icon="grid"></span> Panoramica

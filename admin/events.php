@@ -68,7 +68,7 @@ ob_start();
             <tr>
                 <td>
                     <strong>
-                        <a href="/admin/events-edit.php?id=<?= $event['id'] ?>" style="color:var(--e-text)">
+                        <a href="/admin/rounds.php?event_id=<?= $event['id'] ?>" style="color:var(--e-text)">
                             <?= htmlspecialchars($event['name']) ?>
                         </a>
                     </strong>
