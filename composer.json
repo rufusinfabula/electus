@@ -1,0 +1,17 @@
+{
+    "name": "spazioumano/electus",
+    "description": "Open source modular voting and election management system",
+    "type": "project",
+    "require": {
+        "php": ">=8.3",
+        "phpmailer/phpmailer": "^6.9"
+    },
+    "autoload": {
+        "psr-4": {
+            "Electus\\": "src/"
+        }
+    },
+    "config": {
+        "optimize-autoloader": true
+    }
+}

@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find /home/electus/web/electus.spazioumano.org -type f | wc -l)",
+      "Read(//home/electus/web/electus.spazioumano.org/**)",
+      "Bash(find /home/electus -type d -iname \"*socius*\" 2>/dev/null)",
+      "Read(//home/electus/**)"
+    ]
+  }
+}

@@ -1,0 +1,175 @@
+<?php
+
+return [
+    // General
+    'app_name'       => 'Electus',
+    'save'           => 'Enregistrer',
+    'cancel'         => 'Annuler',
+    'delete'         => 'Supprimer',
+    'edit'           => 'Modifier',
+    'create'         => 'Créer',
+    'back'           => 'Retour',
+    'yes'            => 'Oui',
+    'no'             => 'Non',
+    'actions'        => 'Actions',
+    'status'         => 'Statut',
+    'name'           => 'Nom',
+    'email'          => 'Email',
+    'description'    => 'Description',
+    'created_at'     => 'Créé le',
+    'confirm_delete' => 'Voulez-vous vraiment supprimer cet élément ? Cette action est irréversible.',
+
+    // Auth
+    'login'              => 'Connexion',
+    'logout'             => 'Déconnexion',
+    'password'           => 'Mot de passe',
+    'login_title'        => 'Connexion admin',
+    'invalid_credentials'=> 'Email ou mot de passe invalide.',
+    'welcome_back'       => 'Bienvenue, :name.',
+
+    // Navigation
+    'nav_dashboard'  => 'Tableau de bord',
+    'nav_events'     => 'Événements',
+    'nav_users'      => 'Utilisateurs',
+    'nav_settings'   => 'Paramètres',
+
+    // Dashboard
+    'dashboard_title'       => 'Tableau de bord',
+    'dashboard_events_total'=> 'Total événements',
+    'dashboard_active'      => 'Actifs',
+    'dashboard_votes_today' => 'Votes aujourd\'hui',
+
+    // Events
+    'events_title'       => 'Événements',
+    'event_new'          => 'Nouvel événement',
+    'event_edit'         => 'Modifier l\'événement',
+    'event_saved'        => 'Événement enregistré.',
+    'event_deleted'      => 'Événement supprimé.',
+    'event_slug'         => 'Identifiant',
+    'event_type'         => 'Type',
+    'event_access_mode'  => 'Mode d\'accès',
+    'event_status'       => 'Statut',
+    'event_results_public'   => 'Résultats publics',
+    'event_results_timing'   => 'Publication des résultats',
+    'event_email_verification' => 'Vérification email',
+
+    'access_anonymous'                 => 'Ouvert — anonyme',
+    'access_voluntary_registration'    => 'Ouvert — inscription volontaire',
+    'access_mandatory_registration'    => 'Ouvert — inscription obligatoire',
+    'access_closed_list'               => 'Liste fermée (jeton)',
+    'access_registration_with_approval'=> 'Inscription avec approbation admin',
+
+    'results_timing_realtime'   => 'Temps réel',
+    'results_timing_manual'     => 'Publication manuelle',
+    'results_timing_after_close'=> 'Après la clôture du tour',
+
+    'event_status_draft'    => 'Brouillon',
+    'event_status_active'   => 'Actif',
+    'event_status_closed'   => 'Clôturé',
+    'event_status_archived' => 'Archivé',
+
+    // Rounds
+    'rounds_title'   => 'Tours',
+    'round_new'      => 'Nouveau tour',
+    'round_edit'     => 'Modifier le tour',
+    'round_saved'    => 'Tour enregistré.',
+    'round_number'   => 'Tour #',
+    'round_label'    => 'Libellé',
+    'round_model'    => 'Modèle de vote',
+    'round_opens_at' => 'Ouverture',
+    'round_closes_at'=> 'Clôture',
+
+    'model_open'         => 'Ouvert (texte libre)',
+    'model_single'       => 'Choix unique',
+    'model_multiple'     => 'Choix multiple',
+    'model_borda'        => 'Par points (méthode Borda)',
+    'model_proportional' => 'Proportionnel',
+    'model_weighted'     => 'Vote pondéré',
+
+    // Categories
+    'categories_title' => 'Catégories',
+    'category_new'     => 'Nouvelle catégorie',
+    'category_saved'   => 'Catégorie enregistrée.',
+    'category_deleted' => 'Catégorie supprimée.',
+    'sort_order'       => 'Ordre',
+
+    // Candidates
+    'candidates_title'  => 'Candidats',
+    'candidate_new'     => 'Ajouter un candidat',
+    'candidate_saved'   => 'Candidat enregistré.',
+    'candidate_deleted' => 'Candidat supprimé.',
+    'candidate_name'    => 'Nom du candidat',
+
+    // Voters
+    'voters_title'     => 'Électeurs',
+    'voters_import'    => 'Importer CSV',
+    'voter_token_sent' => 'Jeton envoyé.',
+    'voter_approved'   => 'Électeur approuvé.',
+    'voter_rejected'   => 'Électeur refusé.',
+    'participation'    => 'Participation',
+    'voted'            => 'A voté',
+    'not_voted'        => 'N\'a pas voté',
+
+    // Deduplication
+    'dedup_title'      => 'File de déduplication',
+    'dedup_raw'        => 'Saisie originale',
+    'dedup_normalized' => 'Normalisé',
+    'dedup_suggestion' => 'Correspondance suggérée',
+    'dedup_score'      => 'Score',
+    'dedup_merge'      => 'Fusionner',
+    'dedup_keep'       => 'Conserver séparé',
+    'dedup_exclude'    => 'Exclure',
+
+    // Results
+    'results_title'       => 'Résultats',
+    'results_compute'     => 'Calculer les résultats',
+    'results_computed'    => 'Résultats calculés.',
+    'results_export_csv'  => 'Exporter CSV',
+    'results_export_json' => 'Exporter JSON',
+    'total_votes'         => 'Total votes',
+    'total_points'        => 'Total points',
+    'rank'                => 'Classement',
+
+    // Users
+    'users_title'         => 'Utilisateurs',
+    'user_new'            => 'Nouvel utilisateur',
+    'user_edit'           => 'Modifier l\'utilisateur',
+    'user_saved'          => 'Utilisateur enregistré.',
+    'user_deleted'        => 'Utilisateur supprimé.',
+    'user_role'           => 'Rôle',
+    'role_superadmin'     => 'Super admin',
+    'role_event_manager'  => 'Gestionnaire d\'événement',
+    'role_results_reader' => 'Lecteur de résultats',
+
+    // Public vote interface
+    'vote_title'        => 'Voter',
+    'vote_submit'       => 'Soumettre le vote',
+    'vote_confirmed'    => 'Votre vote a été enregistré. Merci.',
+    'vote_already_voted'=> 'Vous avez déjà voté pour ce tour.',
+    'vote_closed'       => 'Ce tour n\'est pas ouvert au vote actuellement.',
+    'vote_register'     => 'S\'inscrire pour voter',
+    'vote_your_email'   => 'Votre adresse email',
+    'vote_your_name'    => 'Votre nom (optionnel)',
+    'vote_consent'      => 'J\'accepte de recevoir des mises à jour sur cet événement.',
+    'vote_proceed'      => 'Passer au vote',
+    'vote_open_hint'    => 'Saisissez le nom de votre candidat préféré.',
+    'vote_verify_sent'  => 'Un lien de confirmation vous a été envoyé. Cliquez dessus pour débloquer votre vote.',
+
+    // Installer
+    'install_title'           => 'Electus — Installation',
+    'install_step_welcome'    => 'Bienvenue',
+    'install_step_database'   => 'Base de données',
+    'install_step_admin'      => 'Compte admin',
+    'install_step_done'       => 'Terminé',
+    'install_requirements_ok' => 'Toutes les conditions requises sont remplies.',
+    'install_db_host'         => 'Hôte de la base de données',
+    'install_db_port'         => 'Port',
+    'install_db_name'         => 'Nom de la base de données',
+    'install_db_user'         => 'Utilisateur de la base de données',
+    'install_db_pass'         => 'Mot de passe de la base de données',
+    'install_admin_name'      => 'Nom admin',
+    'install_admin_email'     => 'Email admin',
+    'install_admin_pass'      => 'Mot de passe admin',
+    'install_success'         => 'Electus a été installé avec succès.',
+    'install_go_admin'        => 'Aller au panneau admin',
+];

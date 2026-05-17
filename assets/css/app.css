@@ -1,0 +1,281 @@
+/* Electus — Custom styles over UIkit */
+
+:root {
+    --e-primary:    #4C3D9E;
+    --e-accent:     #7B68EE;
+    --e-bg:         #F8F7FF;
+    --e-text:       #1A1A2E;
+    --e-sidebar-w:  240px;
+    --e-navbar-h:   60px;
+}
+
+/* ── Navbar ─────────────────────────────────────────────────────────────────── */
+.e-navbar {
+    background: var(--e-primary);
+    height: var(--e-navbar-h);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,.15);
+}
+
+.e-navbar .uk-navbar-nav > li > a,
+.e-navbar .uk-navbar-item {
+    color: rgba(255,255,255,.85);
+    font-size: .875rem;
+}
+
+.e-navbar .uk-navbar-nav > li > a:hover {
+    color: #fff;
+}
+
+/* ── Logo ───────────────────────────────────────────────────────────────────── */
+.e-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+}
+
+.e-logo-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: #fff;
+    color: var(--e-primary);
+    border-radius: 8px;
+    font-weight: 800;
+    font-size: 1.1rem;
+    letter-spacing: -.5px;
+}
+
+.e-logo-text {
+    color: #fff;
+    font-weight: 700;
+    font-size: 1.1rem;
+    letter-spacing: .3px;
+}
+
+/* ── Sidebar ────────────────────────────────────────────────────────────────── */
+.e-sidebar {
+    width: var(--e-sidebar-w);
+    min-height: calc(100vh - var(--e-navbar-h));
+    background: #fff;
+    border-right: 1px solid #e8e6f0;
+    padding: 20px 0;
+    flex-shrink: 0;
+}
+
+.e-nav {
+    padding: 0 12px;
+}
+
+.e-nav .uk-nav-header {
+    color: #9a94b8;
+    font-size: .7rem;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    padding: 16px 12px 4px;
+}
+
+.e-nav > li > a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    color: #4a4568;
+    font-size: .875rem;
+    transition: background .15s, color .15s;
+}
+
+.e-nav > li > a:hover,
+.e-nav > li.uk-active > a {
+    background: var(--e-bg);
+    color: var(--e-primary);
+}
+
+.e-nav > li.uk-active > a {
+    font-weight: 600;
+}
+
+.e-nav .uk-nav-sub-item > a {
+    padding-left: 36px;
+    font-size: .825rem;
+}
+
+/* ── Content area ───────────────────────────────────────────────────────────── */
+.e-content {
+    background: var(--e-bg);
+    min-height: calc(100vh - var(--e-navbar-h));
+    padding: 32px 36px;
+}
+
+.e-page-title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--e-text);
+    margin-bottom: 24px;
+}
+
+/* ── Cards ──────────────────────────────────────────────────────────────────── */
+.e-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 1px 4px rgba(76,61,158,.06);
+    border: 1px solid #ece9f5;
+}
+
+/* ── Stat cards ─────────────────────────────────────────────────────────────── */
+.e-stat {
+    background: #fff;
+    border-radius: 12px;
+    padding: 20px 24px;
+    border: 1px solid #ece9f5;
+    box-shadow: 0 1px 4px rgba(76,61,158,.06);
+}
+
+.e-stat-value {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--e-primary);
+    line-height: 1;
+}
+
+.e-stat-label {
+    font-size: .8rem;
+    color: #9a94b8;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    margin-top: 4px;
+}
+
+/* ── Tables ─────────────────────────────────────────────────────────────────── */
+.e-table {
+    background: #fff;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #ece9f5;
+    box-shadow: 0 1px 4px rgba(76,61,158,.06);
+}
+
+.e-table .uk-table th {
+    background: var(--e-bg);
+    color: #6b6494;
+    font-size: .75rem;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    border-bottom: 1px solid #ece9f5;
+}
+
+/* ── Buttons ────────────────────────────────────────────────────────────────── */
+.uk-button-primary {
+    background-color: var(--e-primary);
+    border-color: var(--e-primary);
+}
+
+.uk-button-primary:hover,
+.uk-button-primary:focus {
+    background-color: #3d3080;
+    border-color: #3d3080;
+}
+
+/* ── Badges ─────────────────────────────────────────────────────────────────── */
+.e-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: .75rem;
+    font-weight: 600;
+    letter-spacing: .03em;
+}
+
+.e-badge-draft    { background: #f0eeff; color: #6b52d4; }
+.e-badge-active   { background: #e6f9ee; color: #1a7a3c; }
+.e-badge-closed   { background: #f5f5f5; color: #777;    }
+.e-badge-archived { background: #fdf2e3; color: #a06000; }
+
+/* ── Public vote interface ──────────────────────────────────────────────────── */
+.e-public-body {
+    background: #fff;
+    color: var(--e-text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.e-public-header {
+    background: var(--e-primary);
+    padding: 0 0;
+}
+
+.e-public-header .uk-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+}
+
+.e-public-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+}
+
+.e-lang-switcher {
+    display: flex;
+    gap: 8px;
+}
+
+.e-lang-switcher a {
+    color: rgba(255,255,255,.65);
+    font-size: .8rem;
+    font-weight: 600;
+    text-decoration: none;
+    padding: 3px 8px;
+    border-radius: 4px;
+}
+
+.e-lang-switcher a:hover,
+.e-lang-switcher a.e-lang-active {
+    color: #fff;
+    background: rgba(255,255,255,.15);
+}
+
+.e-public-main {
+    flex: 1;
+    padding: 40px 0 60px;
+}
+
+.e-vote-box {
+    border: 1px solid #ece9f5;
+    border-radius: 16px;
+    padding: 28px 32px;
+    margin-bottom: 20px;
+}
+
+.e-vote-category {
+    font-size: .75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--e-accent);
+    margin-bottom: 8px;
+}
+
+.e-public-footer {
+    background: var(--e-bg);
+    border-top: 1px solid #ece9f5;
+    padding: 16px 0;
+    text-align: center;
+    font-size: .8rem;
+    color: #9a94b8;
+}
+
+.e-public-footer a {
+    color: var(--e-primary);
+}

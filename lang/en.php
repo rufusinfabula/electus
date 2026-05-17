@@ -1,0 +1,175 @@
+<?php
+
+return [
+    // General
+    'app_name'       => 'Electus',
+    'save'           => 'Save',
+    'cancel'         => 'Cancel',
+    'delete'         => 'Delete',
+    'edit'           => 'Edit',
+    'create'         => 'Create',
+    'back'           => 'Back',
+    'yes'            => 'Yes',
+    'no'             => 'No',
+    'actions'        => 'Actions',
+    'status'         => 'Status',
+    'name'           => 'Name',
+    'email'          => 'Email',
+    'description'    => 'Description',
+    'created_at'     => 'Created',
+    'confirm_delete' => 'Are you sure you want to delete this item? This action cannot be undone.',
+
+    // Auth
+    'login'              => 'Log in',
+    'logout'             => 'Log out',
+    'password'           => 'Password',
+    'login_title'        => 'Admin Login',
+    'invalid_credentials'=> 'Invalid email or password.',
+    'welcome_back'       => 'Welcome back, :name.',
+
+    // Navigation
+    'nav_dashboard'  => 'Dashboard',
+    'nav_events'     => 'Events',
+    'nav_users'      => 'Users',
+    'nav_settings'   => 'Settings',
+
+    // Dashboard
+    'dashboard_title'       => 'Dashboard',
+    'dashboard_events_total'=> 'Total events',
+    'dashboard_active'      => 'Active',
+    'dashboard_votes_today' => 'Votes today',
+
+    // Events
+    'events_title'       => 'Events',
+    'event_new'          => 'New event',
+    'event_edit'         => 'Edit event',
+    'event_saved'        => 'Event saved.',
+    'event_deleted'      => 'Event deleted.',
+    'event_slug'         => 'Slug',
+    'event_type'         => 'Type',
+    'event_access_mode'  => 'Access mode',
+    'event_status'       => 'Status',
+    'event_results_public'   => 'Public results',
+    'event_results_timing'   => 'Results timing',
+    'event_email_verification' => 'Email verification',
+
+    'access_anonymous'                 => 'Open — anonymous',
+    'access_voluntary_registration'    => 'Open — voluntary registration',
+    'access_mandatory_registration'    => 'Open — mandatory registration',
+    'access_closed_list'               => 'Closed list (token)',
+    'access_registration_with_approval'=> 'Registration with admin approval',
+
+    'results_timing_realtime'   => 'Real-time',
+    'results_timing_manual'     => 'Manual release',
+    'results_timing_after_close'=> 'After round closes',
+
+    'event_status_draft'    => 'Draft',
+    'event_status_active'   => 'Active',
+    'event_status_closed'   => 'Closed',
+    'event_status_archived' => 'Archived',
+
+    // Rounds
+    'rounds_title'      => 'Rounds',
+    'round_new'         => 'New round',
+    'round_edit'        => 'Edit round',
+    'round_saved'       => 'Round saved.',
+    'round_number'      => 'Round #',
+    'round_label'       => 'Label',
+    'round_model'       => 'Voting model',
+    'round_opens_at'    => 'Opens at',
+    'round_closes_at'   => 'Closes at',
+
+    'model_open'         => 'Open (free text)',
+    'model_single'       => 'Single choice',
+    'model_multiple'     => 'Multiple choice',
+    'model_borda'        => 'Points (Borda method)',
+    'model_proportional' => 'Proportional',
+    'model_weighted'     => 'Weighted vote',
+
+    // Categories
+    'categories_title' => 'Categories',
+    'category_new'     => 'New category',
+    'category_saved'   => 'Category saved.',
+    'category_deleted' => 'Category deleted.',
+    'sort_order'       => 'Order',
+
+    // Candidates
+    'candidates_title'   => 'Candidates',
+    'candidate_new'      => 'Add candidate',
+    'candidate_saved'    => 'Candidate saved.',
+    'candidate_deleted'  => 'Candidate deleted.',
+    'candidate_name'     => 'Candidate name',
+
+    // Voters
+    'voters_title'       => 'Voters',
+    'voters_import'      => 'Import CSV',
+    'voter_token_sent'   => 'Token sent.',
+    'voter_approved'     => 'Voter approved.',
+    'voter_rejected'     => 'Voter rejected.',
+    'participation'      => 'Participation',
+    'voted'              => 'Voted',
+    'not_voted'          => 'Not voted',
+
+    // Deduplication
+    'dedup_title'        => 'Deduplication queue',
+    'dedup_raw'          => 'Raw input',
+    'dedup_normalized'   => 'Normalized',
+    'dedup_suggestion'   => 'Suggested match',
+    'dedup_score'        => 'Score',
+    'dedup_merge'        => 'Merge',
+    'dedup_keep'         => 'Keep separate',
+    'dedup_exclude'      => 'Exclude',
+
+    // Results
+    'results_title'      => 'Results',
+    'results_compute'    => 'Compute results',
+    'results_computed'   => 'Results computed.',
+    'results_export_csv' => 'Export CSV',
+    'results_export_json'=> 'Export JSON',
+    'total_votes'        => 'Total votes',
+    'total_points'       => 'Total points',
+    'rank'               => 'Rank',
+
+    // Users
+    'users_title'        => 'Users',
+    'user_new'           => 'New user',
+    'user_edit'          => 'Edit user',
+    'user_saved'         => 'User saved.',
+    'user_deleted'       => 'User deleted.',
+    'user_role'          => 'Role',
+    'role_superadmin'    => 'Super admin',
+    'role_event_manager' => 'Event manager',
+    'role_results_reader'=> 'Results reader',
+
+    // Public vote interface
+    'vote_title'         => 'Vote',
+    'vote_submit'        => 'Submit vote',
+    'vote_confirmed'     => 'Your vote has been recorded. Thank you.',
+    'vote_already_voted' => 'You have already voted in this round.',
+    'vote_closed'        => 'This round is not currently open for voting.',
+    'vote_register'      => 'Register to vote',
+    'vote_your_email'    => 'Your email address',
+    'vote_your_name'     => 'Your name (optional)',
+    'vote_consent'       => 'I agree to receive updates about this event.',
+    'vote_proceed'       => 'Proceed to vote',
+    'vote_open_hint'     => 'Type the name of your preferred candidate.',
+    'vote_verify_sent'   => 'A confirmation link has been sent to your email. Please click it to unlock your vote.',
+
+    // Installer
+    'install_title'           => 'Electus — Installation',
+    'install_step_welcome'    => 'Welcome',
+    'install_step_database'   => 'Database',
+    'install_step_admin'      => 'Admin account',
+    'install_step_done'       => 'Done',
+    'install_requirements_ok' => 'All requirements met.',
+    'install_db_host'         => 'Database host',
+    'install_db_port'         => 'Port',
+    'install_db_name'         => 'Database name',
+    'install_db_user'         => 'Database user',
+    'install_db_pass'         => 'Database password',
+    'install_admin_name'      => 'Admin name',
+    'install_admin_email'     => 'Admin email',
+    'install_admin_pass'      => 'Admin password',
+    'install_success'         => 'Electus has been installed successfully.',
+    'install_go_admin'        => 'Go to admin panel',
+];
