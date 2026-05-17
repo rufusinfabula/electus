@@ -280,6 +280,11 @@
     color: var(--e-primary);
 }
 
+/* ── Dedup score colours ────────────────────────────────────────────────────── */
+.e-score-high   { color: #e74c3c; font-weight: 800; }
+.e-score-medium { color: #f39c12; font-weight: 800; }
+.e-score-low    { color: #9a94b8; font-weight: 800; }
+
 /* ── Vote options (single/multiple/proportional/weighted) ──────────────────── */
 .e-vote-option {
     display: flex;

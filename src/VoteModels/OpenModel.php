@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Electus\VoteModels;
 
 use Electus\Models\Candidate;
+use Electus\Models\Deduplication;
 use Electus\Core\Database;
 
 class OpenModel implements VoteModelInterface
@@ -84,7 +85,9 @@ class OpenModel implements VoteModelInterface
             return (int) $existing;
         }
 
-        // Create new user_input candidate
-        return Candidate::create($roundId, $categoryId, $rawName, 'user_input');
+        // Create new user_input candidate and trigger dedup check
+        $newId = Candidate::create($roundId, $categoryId, $rawName, 'user_input');
+        Deduplication::checkAndQueue($roundId, $categoryId, $rawName, $newId);
+        return $newId;
     }
 }
