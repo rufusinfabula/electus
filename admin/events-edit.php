@@ -196,6 +196,59 @@ ob_start();
     </form>
 </div>
 
+<?php if ($event && !empty($event['slug'])): ?>
+<?php
+    $appUrl   = rtrim($config['app']['url'] ?? '', '/');
+    $voteUrl  = $appUrl . '/vote/event.php?slug=' . urlencode($event['slug']);
+    $resultsUrl = $appUrl . '/vote/results.php?slug=' . urlencode($event['slug']);
+?>
+<div class="e-card uk-margin-top" style="border-left:4px solid var(--e-accent)">
+    <p style="margin:0 0 8px;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--e-accent)">
+        Public links
+    </p>
+    <div style="display:flex;flex-direction:column;gap:10px">
+        <div>
+            <p style="margin:0 0 4px;font-size:.75rem;color:#9a94b8">Voting page (share with voters)</p>
+            <div style="display:flex;align-items:center;gap:8px">
+                <code style="background:#f0eeff;padding:6px 12px;border-radius:6px;font-size:.85rem;flex:1;word-break:break-all">
+                    <?= htmlspecialchars($voteUrl) ?>
+                </code>
+                <button onclick="navigator.clipboard.writeText('<?= htmlspecialchars($voteUrl, ENT_QUOTES) ?>')"
+                        class="uk-button uk-button-default uk-button-small" title="Copy">
+                    <span uk-icon="icon:copy;ratio:.85"></span>
+                </button>
+                <a href="<?= htmlspecialchars($voteUrl) ?>" target="_blank"
+                   class="uk-button uk-button-default uk-button-small">
+                    <span uk-icon="icon:forward;ratio:.85"></span>
+                </a>
+            </div>
+        </div>
+        <div>
+            <p style="margin:0 0 4px;font-size:.75rem;color:#9a94b8">Results page (public, when released)</p>
+            <div style="display:flex;align-items:center;gap:8px">
+                <code style="background:#f0eeff;padding:6px 12px;border-radius:6px;font-size:.85rem;flex:1;word-break:break-all">
+                    <?= htmlspecialchars($resultsUrl) ?>
+                </code>
+                <button onclick="navigator.clipboard.writeText('<?= htmlspecialchars($resultsUrl, ENT_QUOTES) ?>')"
+                        class="uk-button uk-button-default uk-button-small" title="Copy">
+                    <span uk-icon="icon:copy;ratio:.85"></span>
+                </button>
+                <a href="<?= htmlspecialchars($resultsUrl) ?>" target="_blank"
+                   class="uk-button uk-button-default uk-button-small">
+                    <span uk-icon="icon:forward;ratio:.85"></span>
+                </a>
+            </div>
+        </div>
+    </div>
+    <?php if (($event['status'] ?? '') !== 'active'): ?>
+    <p style="margin:10px 0 0;font-size:.8rem;color:#e67e22">
+        <span uk-icon="icon:warning;ratio:.8"></span>
+        The voting page only works when the event status is <strong>Active</strong>.
+    </p>
+    <?php endif ?>
+</div>
+<?php endif ?>
+
 <script>
 document.getElementById('access-mode-select')?.addEventListener('change', function () {
     var needs = ['mandatory_registration','closed_list','registration_with_approval'];

@@ -42,6 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $rounds         = Round::forEvent($eventId);
+$appUrl         = rtrim($config['app']['url'] ?? '', '/');
 $pageTitle      = __('rounds_title');
 $activeMenu     = 'rounds';
 $currentEventId = $eventId;
@@ -168,6 +169,33 @@ ob_start();
                     </button>
                 </form>
             </div>
+
+            <?php if ($round['status'] === 'active' && $event['status'] === 'active'): ?>
+            <?php $voteUrl = $appUrl . '/vote/event.php?slug=' . urlencode($event['slug']); ?>
+            <div style="margin-top:14px;padding-top:14px;border-top:1px solid #f0eeff;display:flex;align-items:center;gap:10px">
+                <span uk-icon="icon:link;ratio:.85" style="color:var(--e-accent);flex-shrink:0"></span>
+                <code style="font-size:.8rem;color:var(--e-primary);flex:1;word-break:break-all"><?= htmlspecialchars($voteUrl) ?></code>
+                <button onclick="navigator.clipboard.writeText('<?= htmlspecialchars($voteUrl, ENT_QUOTES) ?>');this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',1500)"
+                        class="uk-button uk-button-default uk-button-small" style="flex-shrink:0">
+                    Copy
+                </button>
+                <a href="<?= htmlspecialchars($voteUrl) ?>" target="_blank"
+                   class="uk-button uk-button-default uk-button-small" style="flex-shrink:0">
+                    Open
+                </a>
+            </div>
+            <?php elseif ($event['status'] !== 'active'): ?>
+            <p style="margin:10px 0 0;font-size:.78rem;color:#9a94b8">
+                <span uk-icon="icon:info;ratio:.75"></span>
+                Set event status to <strong>Active</strong> to enable the voting link.
+            </p>
+            <?php elseif ($round['status'] !== 'active'): ?>
+            <p style="margin:10px 0 0;font-size:.78rem;color:#9a94b8">
+                <span uk-icon="icon:info;ratio:.75"></span>
+                Activate this round to show the voting link.
+            </p>
+            <?php endif ?>
+
         </div>
     </div>
     <?php endforeach ?>
