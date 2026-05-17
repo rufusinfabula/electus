@@ -279,3 +279,46 @@
 .e-public-footer a {
     color: var(--e-primary);
 }
+
+/* ── Vote options (single/multiple/proportional/weighted) ──────────────────── */
+.e-vote-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 2px solid #ece9f5;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+    font-size: .95rem;
+}
+
+.e-vote-option:hover {
+    border-color: var(--e-accent);
+    background: #f8f7ff;
+}
+
+.e-vote-option input[type="radio"],
+.e-vote-option input[type="checkbox"] {
+    accent-color: var(--e-primary);
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
+.e-vote-option:has(input:checked) {
+    border-color: var(--e-primary);
+    background: #f0eeff;
+}
+
+/* ── Borda point rows ───────────────────────────────────────────────────────── */
+.e-borda-row {
+    padding: 10px 0;
+    border-bottom: 1px solid #f0eeff;
+    gap: 12px;
+}
+
+.e-borda-row:last-child {
+    border-bottom: none;
+}
