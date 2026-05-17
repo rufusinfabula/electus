@@ -35,7 +35,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'access_mode'        => $_POST['access_mode'] ?? 'anonymous',
         'email_verification' => isset($_POST['email_verification']) ? 1 : 0,
         'results_public'     => isset($_POST['results_public']) ? 1 : 0,
-        'results_timing'     => $_POST['results_timing'] ?? 'after_close',
         'status'             => $_POST['status'] ?? 'draft',
     ];
 
@@ -50,8 +49,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'Invalid type.';
     if (!in_array($data['access_mode'],   ['anonymous','voluntary_registration','mandatory_registration','closed_list','registration_with_approval'], true))
         $errors[] = 'Invalid access mode.';
-    if (!in_array($data['results_timing'],['realtime','manual','after_close'], true))
-        $errors[] = 'Invalid results timing.';
     if (!in_array($data['status'],        ['draft','active','closed','archived'], true))
         $errors[] = 'Invalid status.';
 
@@ -81,7 +78,6 @@ $activeMenu    = 'events';
 $currentEventId = $id ?: null;
 
 $accessModes   = ['anonymous','voluntary_registration','mandatory_registration','closed_list','registration_with_approval'];
-$timings       = ['realtime','manual','after_close'];
 $statuses      = ['draft','active','closed','archived'];
 
 ob_start();
@@ -175,23 +171,15 @@ ob_start();
             <hr class="uk-width-1-1">
 
             <!-- Results public -->
-            <div class="uk-width-1-2@m">
-                <label class="uk-form-label"><?= __('event_results_timing') ?></label>
-                <select class="uk-select" name="results_timing">
-                    <?php foreach ($timings as $t): ?>
-                    <option value="<?= $t ?>" <?= ($event['results_timing'] ?? 'after_close') === $t ? 'selected' : '' ?>>
-                        <?= __('results_timing_' . $t) ?>
-                    </option>
-                    <?php endforeach ?>
-                </select>
-            </div>
-
-            <div class="uk-width-1-2@m uk-flex uk-flex-middle" style="padding-top:24px">
+            <div class="uk-width-1-1">
                 <label>
                     <input class="uk-checkbox" type="checkbox" name="results_public"
                            <?= ($event['results_public'] ?? 1) ? 'checked' : '' ?>>
                     &nbsp;<?= __('event_results_public') ?>
                 </label>
+                <p class="uk-text-small uk-text-muted uk-margin-remove-top">
+                    Results are always published manually per round, using the "Publish results" button on the Results page.
+                </p>
             </div>
 
         </div>

@@ -89,10 +89,17 @@ ob_start();
     <div class="uk-width-1-1">
         <div class="e-card" style="position:relative">
 
-            <!-- Status badge -->
-            <span class="e-badge e-badge-<?= $round['status'] ?>" style="position:absolute;top:20px;right:20px">
-                <?= __('event_status_' . $round['status']) ?>
-            </span>
+            <!-- Status badges -->
+            <div style="position:absolute;top:20px;right:20px;display:flex;gap:6px;align-items:center">
+                <?php if ($round['results_released']): ?>
+                <span class="e-badge e-badge-active" title="Results public">&#127758;</span>
+                <?php elseif ($round['votes_validated']): ?>
+                <span class="e-badge" style="background:#fff3cd;color:#856404" title="Votes validated">&#10003; validated</span>
+                <?php endif ?>
+                <span class="e-badge e-badge-<?= $round['status'] ?>">
+                    <?= __('event_status_' . $round['status']) ?>
+                </span>
+            </div>
 
             <div class="uk-flex uk-flex-middle" style="gap:12px;margin-bottom:8px">
                 <span uk-icon="icon:<?= $modelIcons[$round['model']] ?? 'list' ?>"

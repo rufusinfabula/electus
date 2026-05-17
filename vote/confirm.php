@@ -34,8 +34,8 @@ ob_start();
     <p style="color:#6b6494;margin-bottom:24px">
         <?= htmlspecialchars($event['name']) ?>
     </p>
-    <?php if ($event['results_public'] && $event['results_timing'] === 'realtime'): ?>
-    <a href="/results/?slug=<?= urlencode($slug) ?>" class="uk-button uk-button-default">
+    <?php if ($event['results_public']): ?>
+    <a href="/vote/results.php?slug=<?= urlencode($slug) ?>" class="uk-button uk-button-default">
         View results
     </a>
     <?php endif ?>

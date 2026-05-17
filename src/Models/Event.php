@@ -42,8 +42,8 @@ class Event
         $stmt = $pdo->prepare(
             'INSERT INTO events
              (name, slug, description, type, access_mode, email_verification,
-              results_public, results_timing, status, created_by)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+              results_public, status, created_by)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
         );
         $stmt->execute([
             $data['name'],
@@ -53,7 +53,6 @@ class Event
             $data['access_mode'],
             (int) ($data['email_verification'] ?? 0),
             (int) ($data['results_public'] ?? 1),
-            $data['results_timing'],
             $data['status'],
             $createdBy,
         ]);
@@ -66,7 +65,7 @@ class Event
         $stmt = $pdo->prepare(
             'UPDATE events SET
              name = ?, slug = ?, description = ?, type = ?, access_mode = ?,
-             email_verification = ?, results_public = ?, results_timing = ?, status = ?
+             email_verification = ?, results_public = ?, status = ?
              WHERE id = ?'
         );
         $stmt->execute([
@@ -77,7 +76,6 @@ class Event
             $data['access_mode'],
             (int) ($data['email_verification'] ?? 0),
             (int) ($data['results_public'] ?? 1),
-            $data['results_timing'],
             $data['status'],
             $id,
         ]);

@@ -35,7 +35,6 @@ CREATE TABLE IF NOT EXISTS `events` (
   `access_mode`        ENUM('anonymous','voluntary_registration','mandatory_registration','closed_list','registration_with_approval') NOT NULL DEFAULT 'anonymous',
   `email_verification` TINYINT(1) NOT NULL DEFAULT 0,
   `results_public`     TINYINT(1) NOT NULL DEFAULT 1,
-  `results_timing`     ENUM('realtime','manual','after_close') NOT NULL DEFAULT 'after_close',
   `status`             ENUM('draft','active','closed','archived') NOT NULL DEFAULT 'draft',
   `created_by`         INT UNSIGNED NOT NULL,
   `created_at`         DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -56,6 +55,10 @@ CREATE TABLE IF NOT EXISTS `event_rounds` (
   `parent_round_id`     INT UNSIGNED NULL,
   `top_n_to_promote`    TINYINT UNSIGNED NULL,
   `promotion_confirmed` TINYINT(1) NOT NULL DEFAULT 0,
+  `votes_validated`     TINYINT(1) NOT NULL DEFAULT 0,
+  `validated_by`        INT UNSIGNED NULL,
+  `validated_at`        DATETIME NULL,
+  `results_released`    TINYINT(1) NOT NULL DEFAULT 0,
   FOREIGN KEY (`event_id`)        REFERENCES `events`(`id`) ON DELETE CASCADE,
   FOREIGN KEY (`parent_round_id`) REFERENCES `event_rounds`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

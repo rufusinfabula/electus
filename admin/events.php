@@ -58,7 +58,7 @@ ob_start();
                 <th><?= __('name') ?></th>
                 <th><?= __('event_access_mode') ?></th>
                 <th><?= __('event_status') ?></th>
-                <th><?= __('event_results_timing') ?></th>
+                <th><?= __('event_results_public') ?></th>
                 <th><?= __('created_at') ?></th>
                 <th style="width:120px"><?= __('actions') ?></th>
             </tr>
@@ -80,7 +80,7 @@ ob_start();
                         <?= __('event_status_' . $event['status']) ?>
                     </span>
                 </td>
-                <td><?= __('results_timing_' . $event['results_timing']) ?></td>
+                <td><?= $event['results_public'] ? '<span class="e-badge e-badge-active">Yes</span>' : '<span class="e-badge e-badge-closed">No</span>' ?></td>
                 <td><?= date('d/m/Y', strtotime($event['created_at'])) ?></td>
                 <td>
                     <div class="uk-flex uk-flex-middle" style="gap:8px">

@@ -82,7 +82,7 @@
                 </a>
             </li>
             <li class="uk-nav-sub-item <?= ($activeMenu ?? '') === 'results' ? 'uk-active' : '' ?>">
-                <a href="/admin/results.php?event_id=<?= $currentEventId ?>">
+                <a href="/admin/rounds.php?event_id=<?= $currentEventId ?>#results">
                     <span uk-icon="bar-chart"></span> <?= __('results_title') ?>
                 </a>
             </li>
@@ -119,6 +119,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/uikit@3/dist/js/uikit.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/uikit@3/dist/js/uikit-icons.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <script src="/assets/js/admin.js"></script>
 </body>
 </html>
