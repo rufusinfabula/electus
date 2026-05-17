@@ -99,10 +99,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($aliasId) { Deduplication::deleteAlias($aliasId); Flash::success('Alias eliminato.'); }
         })(),
 
+        'rescan' => (function () use ($roundId) {
+            $n = Deduplication::rescanAll($roundId);
+            Flash::success($n > 0 ? "$n nuovi possibili duplicati trovati." : 'Nessun nuovo duplicato trovato.');
+        })(),
+
         default => null,
     };
 
-    $redirectTab = in_array($action, ['merge','keep','exclude','delete_alias'], true) ? 'review' : 'results';
+    $redirectTab = in_array($action, ['merge','keep','exclude','delete_alias','rescan'], true) ? 'review' : 'results';
     header('Location: /admin/results.php?round_id=' . $roundId . '&tab=' . $redirectTab);
     exit;
 }
@@ -397,12 +402,22 @@ ob_start();
 <?php elseif ($tab === 'review' && $isOpen): ?>
 
 <!-- Dedup / Candidate review tab -->
-<div class="uk-flex uk-flex-between uk-flex-middle uk-margin-bottom">
-    <p style="color:#9a94b8;font-size:.875rem;margin:0"><?= __('dedup_intro') ?></p>
-    <div style="font-size:.85rem;color:#9a94b8;white-space:nowrap;margin-left:16px">
-        <strong style="color:var(--e-primary)"><?= $pendingCount ?></strong> da rivedere
-        &nbsp;·&nbsp;
-        <strong style="color:#27ae60"><?= $reviewedCount ?></strong> revisionati
+<div class="uk-flex uk-flex-between uk-flex-top uk-margin-bottom" style="gap:16px">
+    <p style="color:#9a94b8;font-size:.875rem;margin:0;flex:1"><?= __('dedup_intro') ?></p>
+    <div style="display:flex;align-items:center;gap:12px;flex-shrink:0">
+        <span style="font-size:.85rem;color:#9a94b8">
+            <strong style="color:var(--e-primary)"><?= $pendingCount ?></strong> da rivedere
+            &nbsp;·&nbsp;
+            <strong style="color:#27ae60"><?= $reviewedCount ?></strong> revisionati
+        </span>
+        <form method="post" style="margin:0">
+            <?= Csrf::field() ?>
+            <input type="hidden" name="_action" value="rescan">
+            <button class="uk-button uk-button-default uk-button-small"
+                    title="Ri-analizza tutti i candidati alla ricerca di possibili duplicati non ancora segnalati">
+                <span uk-icon="icon:search;ratio:.8"></span> Ri-scansiona
+            </button>
+        </form>
     </div>
 </div>
 

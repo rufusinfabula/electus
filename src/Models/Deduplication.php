@@ -58,20 +58,63 @@ class Deduplication
     }
 
     /**
-     * Combined similarity score (0–100) using similar_text + normalised levenshtein.
+     * Combined similarity score (0–100).
+     * Checks prefix/substring containment first (catches "amnesty" vs
+     * "amnesty international"), then falls back to similar_text + levenshtein.
      */
     public static function similarity(string $a, string $b): int
     {
         if ($a === $b) return 100;
 
+        $short = mb_strlen($a) <= mb_strlen($b) ? $a : $b;
+        $long  = mb_strlen($a) <= mb_strlen($b) ? $b : $a;
+
+        // One string is a prefix of the other → very likely duplicate
+        if (str_starts_with($long, $short)) return 85;
+
+        // One string is contained inside the other
+        if (mb_strpos($long, $short) !== false) return 78;
+
         similar_text($a, $b, $stPct);
 
-        $maxLen = max(mb_strlen($a), mb_strlen($b));
+        $maxLen   = max(mb_strlen($a), mb_strlen($b));
         $levScore = $maxLen > 0
             ? (int) round((1 - levenshtein(mb_substr($a, 0, 255), mb_substr($b, 0, 255)) / $maxLen) * 100)
             : 100;
 
         return (int) round(((float) $stPct + $levScore) / 2);
+    }
+
+    /**
+     * Re-checks ALL active candidates in a round against each other.
+     * Use after fixing the similarity algorithm or to catch missed duplicates.
+     * Returns number of new queue entries created.
+     */
+    public static function rescanAll(int $roundId): int
+    {
+        $pdo  = Database::get();
+        $stmt = $pdo->prepare(
+            "SELECT * FROM candidates
+             WHERE round_id = ? AND status = 'active'"
+        );
+        $stmt->execute([$roundId]);
+        $candidates = $stmt->fetchAll();
+
+        $added = 0;
+        foreach ($candidates as $cand) {
+            $before = self::queueCount($roundId);
+            self::checkAndQueue($roundId, (int) $cand['category_id'], $cand['name'], (int) $cand['id']);
+            if (self::queueCount($roundId) > $before) $added++;
+        }
+        return $added;
+    }
+
+    private static function queueCount(int $roundId): int
+    {
+        $pdo  = Database::get();
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM dedup_queue WHERE round_id = ? AND status = 'pending'");
+        $stmt->execute([$roundId]);
+        return (int) $stmt->fetchColumn();
     }
 
     /**
