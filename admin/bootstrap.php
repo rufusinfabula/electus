@@ -39,5 +39,5 @@ use Electus\Core\Flash;
 // Allow login.php through without auth check
 $currentFile = basename($_SERVER['PHP_SELF']);
 if (!in_array($currentFile, ['login.php', 'logout.php'], true)) {
-    Auth::requireLogin(ROOT . '/../admin/login.php');
+    Auth::requireLogin();
 }
