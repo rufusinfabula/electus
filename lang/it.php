@@ -29,22 +29,22 @@ return [
 
     // Navigation
     'nav_dashboard'  => 'Dashboard',
-    'nav_events'     => 'Eventi',
+    'nav_events'     => 'Votazioni',
     'nav_users'      => 'Utenti',
     'nav_settings'   => 'Impostazioni',
 
     // Dashboard
     'dashboard_title'       => 'Dashboard',
-    'dashboard_events_total'=> 'Eventi totali',
-    'dashboard_active'      => 'Attivi',
+    'dashboard_events_total'=> 'Votazioni totali',
+    'dashboard_active'      => 'In corso',
     'dashboard_votes_today' => 'Voti oggi',
 
-    // Events
-    'events_title'       => 'Eventi',
-    'event_new'          => 'Nuovo evento',
-    'event_edit'         => 'Modifica evento',
-    'event_saved'        => 'Evento salvato.',
-    'event_deleted'      => 'Evento eliminato.',
+    // Events / Votazioni
+    'events_title'       => 'Votazioni',
+    'event_new'          => 'Nuova votazione',
+    'event_edit'         => 'Modifica votazione',
+    'event_saved'        => 'Votazione salvata.',
+    'event_deleted'      => 'Votazione eliminata.',
     'event_slug'         => 'Slug',
     'event_type'         => 'Tipo',
     'event_access_mode'  => 'Modalità di accesso',
@@ -64,7 +64,7 @@ return [
     'event_status_archived' => 'Archiviato',
 
     // Rounds
-    'rounds_title'      => 'Turni',
+    'rounds_title'      => 'Turni di voto',
     'round_new'         => 'Nuovo turno',
     'round_edit'        => 'Modifica turno',
     'round_saved'       => 'Turno salvato.',
@@ -105,15 +105,17 @@ return [
     'voted'            => 'Ha votato',
     'not_voted'        => 'Non ha votato',
 
-    // Deduplication
-    'dedup_title'      => 'Coda deduplicazione',
-    'dedup_raw'        => 'Input originale',
+    // Candidate review (formerly deduplication)
+    'dedup_title'      => 'Revisione candidature',
+    'dedup_tab'        => 'Candidature',
+    'dedup_raw'        => 'Nome inserito',
     'dedup_normalized' => 'Normalizzato',
-    'dedup_suggestion' => 'Corrispondenza suggerita',
-    'dedup_score'      => 'Punteggio',
+    'dedup_suggestion' => 'Possibile corrispondenza',
+    'dedup_score'      => 'Somiglianza',
     'dedup_merge'      => 'Unisci',
     'dedup_keep'       => 'Mantieni separato',
     'dedup_exclude'    => 'Escludi',
+    'dedup_intro'      => 'Questi nomi potrebbero essere duplicati. Uniscili per evitare voti spezzati, mantienili separati se sono persone diverse, oppure escludili dai risultati.',
 
     // Results
     'results_title'          => 'Risultati',

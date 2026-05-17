@@ -29,22 +29,22 @@ return [
 
     // Navigation
     'nav_dashboard'  => 'Dashboard',
-    'nav_events'     => 'Events',
+    'nav_events'     => 'Voting sessions',
     'nav_users'      => 'Users',
     'nav_settings'   => 'Settings',
 
     // Dashboard
     'dashboard_title'       => 'Dashboard',
-    'dashboard_events_total'=> 'Total events',
+    'dashboard_events_total'=> 'Total voting sessions',
     'dashboard_active'      => 'Active',
     'dashboard_votes_today' => 'Votes today',
 
-    // Events
-    'events_title'       => 'Events',
-    'event_new'          => 'New event',
-    'event_edit'         => 'Edit event',
-    'event_saved'        => 'Event saved.',
-    'event_deleted'      => 'Event deleted.',
+    // Events / Voting sessions
+    'events_title'       => 'Voting sessions',
+    'event_new'          => 'New voting session',
+    'event_edit'         => 'Edit voting session',
+    'event_saved'        => 'Voting session saved.',
+    'event_deleted'      => 'Voting session deleted.',
     'event_slug'         => 'Slug',
     'event_type'         => 'Type',
     'event_access_mode'  => 'Access mode',
@@ -105,15 +105,17 @@ return [
     'voted'              => 'Voted',
     'not_voted'          => 'Not voted',
 
-    // Deduplication
-    'dedup_title'        => 'Deduplication queue',
-    'dedup_raw'          => 'Raw input',
+    // Candidate review (formerly deduplication)
+    'dedup_title'        => 'Candidate review',
+    'dedup_tab'          => 'Candidates',
+    'dedup_raw'          => 'Name submitted',
     'dedup_normalized'   => 'Normalized',
-    'dedup_suggestion'   => 'Suggested match',
-    'dedup_score'        => 'Score',
+    'dedup_suggestion'   => 'Possible match',
+    'dedup_score'        => 'Similarity',
     'dedup_merge'        => 'Merge',
     'dedup_keep'         => 'Keep separate',
     'dedup_exclude'      => 'Exclude',
+    'dedup_intro'        => 'These names might be duplicates. Merge them to avoid split votes, keep them separate if they are different people, or exclude them from results.',
 
     // Results
     'results_title'          => 'Results',

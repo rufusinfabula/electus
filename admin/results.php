@@ -7,7 +7,8 @@ require __DIR__ . '/bootstrap.php';
 use Electus\Core\Auth;
 use Electus\Core\Csrf;
 use Electus\Core\Flash;
-use Electus\Models\Category;
+use Electus\Models\Candidate;
+use Electus\Models\Deduplication;
 use Electus\Models\Event;
 use Electus\Models\Results;
 use Electus\Models\Round;
@@ -15,7 +16,7 @@ use Electus\Models\Round;
 $roundId = (int) ($_GET['round_id'] ?? 0);
 $round   = $roundId ? Round::find($roundId) : null;
 if (!$round) {
-    Flash::error('Round not found.');
+    Flash::error('Turno non trovato.');
     header('Location: /admin/events.php');
     exit;
 }
@@ -24,23 +25,22 @@ $eventId = (int) $round['event_id'];
 $event   = Event::find($eventId);
 Auth::requireEventPermission($eventId);
 
-// ── POST actions ──────────────────────────────────────────────────────────────
+$tab  = $_GET['tab'] ?? 'results';
+$user = Auth::currentUser();
+
+// ── POST ─────────────────────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     Csrf::check();
     $action = $_POST['_action'] ?? '';
-    $user   = Auth::currentUser();
 
+    // Results actions
     match ($action) {
-        'compute' => (function () use ($round, $roundId) {
-            try {
-                Results::compute($roundId);
-                Flash::success(__('results_computed'));
-            } catch (\Throwable $e) {
-                Flash::error('Compute failed: ' . $e->getMessage());
-            }
+        'compute' => (function () use ($roundId) {
+            try { Results::compute($roundId); Flash::success(__('results_computed')); }
+            catch (\Throwable $e) { Flash::error('Errore: ' . $e->getMessage()); }
         })(),
 
-        'validate' => (function () use ($round, $roundId, $user) {
+        'validate' => (function () use ($roundId, $user) {
             Results::validate($roundId, $user['id']);
             Flash::success(__('votes_validated'));
         })(),
@@ -51,12 +51,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         })(),
 
         'publish' => (function () use ($round, $roundId) {
-            if (!$round['votes_validated']) {
-                Flash::error(__('results_not_validated'));
-            } else {
-                Results::publish($roundId);
-                Flash::success(__('results_published'));
-            }
+            if (!$round['votes_validated']) { Flash::error(__('results_not_validated')); }
+            else { Results::publish($roundId); Flash::success(__('results_published')); }
         })(),
 
         'unpublish' => (function () use ($roundId) {
@@ -67,70 +63,96 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'promote' => (function () use ($round, $roundId) {
             $toRoundId = (int) ($_POST['to_round_id'] ?? 0);
             $topN      = (int) ($round['top_n_to_promote'] ?? 0);
-            if (!$toRoundId || !$topN) {
-                Flash::error('Specify a target round and top-N value.');
-            } elseif (!$round['votes_validated']) {
-                Flash::error(__('results_not_validated'));
-            } else {
-                try {
-                    Results::promote($roundId, $toRoundId, $topN);
-                    Flash::success('Top ' . $topN . ' candidates promoted to round #' . $toRoundId . '.');
-                } catch (\Throwable $e) {
-                    Flash::error('Promotion failed: ' . $e->getMessage());
-                }
+            if (!$toRoundId || !$topN) { Flash::error('Specifica turno e numero di candidati.'); }
+            elseif (!$round['votes_validated']) { Flash::error(__('results_not_validated')); }
+            else {
+                try { Results::promote($roundId, $toRoundId, $topN); Flash::success('Candidati promossi.'); }
+                catch (\Throwable $e) { Flash::error('Errore: ' . $e->getMessage()); }
             }
+        })(),
+
+        // Dedup actions
+        'merge' => (function () use ($roundId, $user) {
+            $queueId   = (int) ($_POST['queue_id'] ?? 0);
+            $sourceId  = (int) ($_POST['source_candidate_id'] ?? 0);
+            $targetId  = (int) ($_POST['target_candidate_id'] ?? 0);
+            $canonical = trim($_POST['canonical_override'] ?? '');
+            if ($queueId && $sourceId && $targetId) {
+                try { Deduplication::merge($queueId, $sourceId, $targetId, $user['id'], $canonical); Flash::success('Candidati uniti. Alias salvato.'); }
+                catch (\Throwable $e) { Flash::error('Errore: ' . $e->getMessage()); }
+            }
+        })(),
+
+        'keep' => (function () use ($user) {
+            $queueId = (int) ($_POST['queue_id'] ?? 0);
+            if ($queueId) { Deduplication::keep($queueId, $user['id']); Flash::success('Candidato mantenuto separato.'); }
+        })(),
+
+        'exclude' => (function () use ($user) {
+            $queueId     = (int) ($_POST['queue_id'] ?? 0);
+            $candidateId = (int) ($_POST['candidate_id'] ?? 0);
+            if ($queueId && $candidateId) { Deduplication::exclude($queueId, $candidateId, $user['id']); Flash::success('Candidato escluso.'); }
+        })(),
+
+        'delete_alias' => (function () {
+            $aliasId = (int) ($_POST['alias_id'] ?? 0);
+            if ($aliasId) { Deduplication::deleteAlias($aliasId); Flash::success('Alias eliminato.'); }
         })(),
 
         default => null,
     };
 
-    // Re-fetch round after any state change
-    header('Location: /admin/results.php?round_id=' . $roundId);
+    $redirectTab = in_array($action, ['merge','keep','exclude','delete_alias'], true) ? 'review' : 'results';
+    header('Location: /admin/results.php?round_id=' . $roundId . '&tab=' . $redirectTab);
     exit;
 }
 
-// ── Export handlers ───────────────────────────────────────────────────────────
+// ── Exports ───────────────────────────────────────────────────────────────────
 $export = $_GET['export'] ?? '';
 if ($export === 'csv') {
     $rows = Results::toCsvRows($roundId);
     header('Content-Type: text/csv; charset=utf-8');
-    header('Content-Disposition: attachment; filename="results_round_' . $roundId . '.csv"');
+    header('Content-Disposition: attachment; filename="risultati_turno_' . $roundId . '.csv"');
     $out = fopen('php://output', 'w');
-    if ($rows) {
-        fputcsv($out, array_keys($rows[0]));
-        foreach ($rows as $row) {
-            fputcsv($out, $row);
-        }
-    }
+    if ($rows) { fputcsv($out, array_keys($rows[0])); foreach ($rows as $r) fputcsv($out, $r); }
     fclose($out);
     exit;
 }
 if ($export === 'json') {
     $rows = Results::toCsvRows($roundId);
     header('Content-Type: application/json; charset=utf-8');
-    header('Content-Disposition: attachment; filename="results_round_' . $roundId . '.json"');
+    header('Content-Disposition: attachment; filename="risultati_turno_' . $roundId . '.json"');
     echo json_encode($rows, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
     exit;
 }
 
 // ── Data ──────────────────────────────────────────────────────────────────────
-$round = Round::find($roundId); // re-fetch after possible POST
+$round             = Round::find($roundId);
 $resultsByCategory = Results::forRound($roundId);
 $voterCount        = Results::voterCount($roundId);
 $voteRowCount      = Results::voteRowCount($roundId);
 $validatorInfo     = Results::validatorInfo($roundId);
-$categories        = Category::forEvent($eventId);
+$allRounds         = Round::forEvent($eventId);
+$laterRounds       = array_filter($allRounds, fn($r) => $r['round_number'] > $round['round_number']);
 
-// Sibling rounds for promotion target
-$allRounds = Round::forEvent($eventId);
-$laterRounds = array_filter($allRounds, fn($r) => $r['round_number'] > $round['round_number']);
+// Dedup data (for open rounds)
+$isOpen        = $round['model'] === 'open';
+$dedupQueue    = $isOpen ? Deduplication::getPendingQueue($roundId)    : [];
+$reviewedCount = $isOpen ? Deduplication::getReviewedCount($roundId)   : 0;
+$aliases       = $isOpen ? Deduplication::getAliasDictionary($eventId) : [];
+$allCandidates = $isOpen ? Candidate::forRound($roundId)               : [];
+$candByCategory = [];
+foreach ($allCandidates as $c) { $candByCategory[$c['category_id']][] = $c; }
 
-$pageTitle      = __('results_title');
+$pendingCount = count($dedupQueue);
+
+$pageTitle      = __('results_title') . ' — ' . __('round_number') . $round['round_number'];
 $activeMenu     = 'rounds';
 $currentEventId = $eventId;
 
 ob_start();
 ?>
+
 <!-- Header -->
 <div class="uk-flex uk-flex-between uk-flex-middle uk-margin-bottom">
     <div class="uk-flex uk-flex-middle" style="gap:12px">
@@ -144,7 +166,6 @@ ob_start();
             <h1 class="e-page-title uk-margin-remove"><?= __('results_title') ?></h1>
         </div>
     </div>
-    <!-- Export buttons -->
     <?php if (!empty($resultsByCategory)): ?>
     <div style="display:flex;gap:8px">
         <a href="?round_id=<?= $roundId ?>&export=csv"  class="uk-button uk-button-default uk-button-small">
@@ -157,54 +178,68 @@ ob_start();
     <?php endif ?>
 </div>
 
-<!-- Status bar -->
+<!-- Stats row -->
 <div class="uk-grid-small uk-margin-bottom" uk-grid>
     <div class="uk-width-auto">
-        <div class="e-stat" style="min-width:140px">
+        <div class="e-stat" style="min-width:120px">
             <div class="e-stat-value"><?= $voterCount ?></div>
-            <div class="e-stat-label">Voters</div>
+            <div class="e-stat-label">Votanti</div>
         </div>
     </div>
     <div class="uk-width-auto">
-        <div class="e-stat" style="min-width:140px">
+        <div class="e-stat" style="min-width:120px">
             <div class="e-stat-value"><?= $voteRowCount ?></div>
-            <div class="e-stat-label">Vote entries</div>
+            <div class="e-stat-label">Voti espressi</div>
         </div>
     </div>
     <div class="uk-width-expand">
-        <div class="e-card" style="height:100%;display:flex;align-items:center;gap:20px;flex-wrap:wrap">
-
-            <!-- Validation status -->
+        <div class="e-card" style="height:100%;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
             <?php if ($round['votes_validated']): ?>
             <div>
                 <span class="e-badge e-badge-active">&#10003; <?= __('votes_validated') ?></span>
                 <?php if ($validatorInfo && $validatorInfo['name']): ?>
-                <p style="margin:4px 0 0;font-size:.75rem;color:#9a94b8">
-                    <?= __('validated_by') ?>: <strong><?= htmlspecialchars($validatorInfo['name']) ?></strong>
-                    — <?= htmlspecialchars(substr($validatorInfo['validated_at'] ?? '', 0, 16)) ?>
+                <p style="margin:4px 0 0;font-size:.72rem;color:#9a94b8">
+                    da <strong><?= htmlspecialchars($validatorInfo['name']) ?></strong>
+                    il <?= htmlspecialchars(substr($validatorInfo['validated_at'] ?? '', 0, 16)) ?>
                 </p>
                 <?php endif ?>
             </div>
             <?php else: ?>
-            <span class="e-badge e-badge-draft">&#9679; Votes not yet validated</span>
+            <span class="e-badge e-badge-draft">Voti non ancora validati</span>
             <?php endif ?>
-
-            <!-- Results released status -->
             <?php if ($round['results_released']): ?>
-            <span class="e-badge e-badge-active">&#127758; Results public</span>
+            <span class="e-badge e-badge-active">&#127758; Risultati pubblici</span>
             <?php else: ?>
-            <span class="e-badge e-badge-closed">Results hidden</span>
+            <span class="e-badge e-badge-closed">Risultati non pubblicati</span>
             <?php endif ?>
-
         </div>
     </div>
 </div>
 
-<!-- Action toolbar -->
-<div class="e-card uk-margin-bottom" style="padding:16px 24px">
-    <div class="uk-flex uk-flex-wrap" style="gap:10px;align-items:center">
+<!-- Tabs -->
+<ul class="uk-tab uk-margin-bottom" uk-tab>
+    <li class="<?= $tab === 'results' ? 'uk-active' : '' ?>">
+        <a href="?round_id=<?= $roundId ?>&tab=results"><?= __('results_title') ?></a>
+    </li>
+    <?php if ($isOpen): ?>
+    <li class="<?= $tab === 'review' ? 'uk-active' : '' ?>">
+        <a href="?round_id=<?= $roundId ?>&tab=review">
+            <?= __('dedup_tab') ?>
+            <?php if ($pendingCount > 0): ?>
+            <span class="uk-badge" style="background:#e67e22;margin-left:4px"><?= $pendingCount ?></span>
+            <?php else: ?>
+            <span class="uk-badge" style="background:#9a94b8;margin-left:4px"><?= $reviewedCount ?></span>
+            <?php endif ?>
+        </a>
+    </li>
+    <?php endif ?>
+</ul>
 
-        <!-- Compute -->
+<?php if ($tab === 'results'): ?>
+
+<!-- Action toolbar -->
+<div class="e-card uk-margin-bottom" style="padding:14px 20px">
+    <div class="uk-flex uk-flex-wrap" style="gap:10px;align-items:center">
         <form method="post" style="margin:0">
             <?= Csrf::field() ?>
             <input type="hidden" name="_action" value="compute">
@@ -213,7 +248,6 @@ ob_start();
             </button>
         </form>
 
-        <!-- Validate / Unvalidate -->
         <?php if (!$round['votes_validated']): ?>
         <form method="post" style="margin:0">
             <?= Csrf::field() ?>
@@ -229,13 +263,12 @@ ob_start();
             <?= Csrf::field() ?>
             <input type="hidden" name="_action" value="unvalidate">
             <button class="uk-button uk-button-link uk-button-small" style="color:#e74c3c"
-                    data-confirm="Remove validation? This will also unpublish results.">
+                    data-confirm="Rimuovere la validazione? I risultati verranno nascosti.">
                 <?= __('votes_unvalidate') ?>
             </button>
         </form>
         <?php endif ?>
 
-        <!-- Publish / Unpublish -->
         <?php if (!$round['results_released']): ?>
         <form method="post" style="margin:0">
             <?= Csrf::field() ?>
@@ -251,13 +284,12 @@ ob_start();
             <?= Csrf::field() ?>
             <input type="hidden" name="_action" value="unpublish">
             <button class="uk-button uk-button-link uk-button-small" style="color:#e74c3c"
-                    data-confirm="Hide results from the public page?">
+                    data-confirm="Nascondere i risultati dalla pagina pubblica?">
                 <?= __('results_unpublish') ?>
             </button>
         </form>
         <?php endif ?>
 
-        <!-- Promote to next round -->
         <?php if ($round['top_n_to_promote'] && !$round['promotion_confirmed'] && !empty($laterRounds)): ?>
         <form method="post" style="margin:0;display:flex;gap:6px;align-items:center">
             <?= Csrf::field() ?>
@@ -265,25 +297,24 @@ ob_start();
             <select name="to_round_id" class="uk-select uk-form-small" style="width:auto">
                 <?php foreach ($laterRounds as $lr): ?>
                 <option value="<?= $lr['id'] ?>">
-                    Round #<?= $lr['round_number'] ?> <?= htmlspecialchars($lr['label'] ?? '') ?>
+                    Turno #<?= $lr['round_number'] ?> <?= htmlspecialchars($lr['label'] ?? '') ?>
                 </option>
                 <?php endforeach ?>
             </select>
             <button class="uk-button uk-button-default uk-button-small"
-                    <?= !$round['votes_validated'] ? 'disabled title="' . htmlspecialchars(__('results_not_validated')) . '"' : '' ?>
-                    data-confirm="Promote top <?= (int)$round['top_n_to_promote'] ?> to the selected round?">
+                    <?= !$round['votes_validated'] ? 'disabled' : '' ?>
+                    data-confirm="Promuovere i top <?= (int)$round['top_n_to_promote'] ?> al turno selezionato?">
                 <span uk-icon="icon:push;ratio:.8"></span>
-                Promote top <?= (int)$round['top_n_to_promote'] ?>
+                Promuovi top <?= (int)$round['top_n_to_promote'] ?>
             </button>
         </form>
         <?php elseif ($round['promotion_confirmed']): ?>
-        <span style="font-size:.8rem;color:#27ae60">&#10003; Candidates promoted</span>
+        <span style="font-size:.8rem;color:#27ae60">&#10003; Candidati promossi</span>
         <?php endif ?>
-
     </div>
 </div>
 
-<!-- Results tables + charts -->
+<!-- Results by category -->
 <?php if (empty($resultsByCategory)): ?>
 <div class="e-card uk-text-center" style="padding:60px">
     <span uk-icon="icon:info;ratio:2" style="color:#9a94b8"></span>
@@ -299,19 +330,17 @@ ob_start();
     $winner  = $rows[0]['candidate_name'];
 ?>
 <div class="uk-margin-medium-bottom">
-    <h3 style="font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--e-accent);margin-bottom:12px">
+    <h3 style="font-size:.82rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--e-accent);margin-bottom:10px">
         <?= htmlspecialchars($catName) ?>
     </h3>
-
     <div class="uk-grid-medium" uk-grid>
-        <!-- Table -->
         <div class="uk-width-1-2@l">
             <div class="e-table">
                 <table class="uk-table uk-table-hover uk-table-divider uk-table-small uk-margin-remove">
                     <thead>
                         <tr>
-                            <th style="width:40px"><?= __('rank') ?></th>
-                            <th><?= __('candidate_name') ?></th>
+                            <th style="width:36px">#</th>
+                            <th>Candidato</th>
                             <th style="text-align:right"><?= __('total_votes') ?></th>
                             <th style="text-align:right"><?= __('total_points') ?></th>
                         </tr>
@@ -319,13 +348,7 @@ ob_start();
                     <tbody>
                     <?php foreach ($rows as $r): ?>
                     <tr <?= $r['rank'] == 1 ? 'style="background:#f0fdf4;font-weight:700"' : '' ?>>
-                        <td>
-                            <?php if ($r['rank'] == 1): ?>
-                            <span style="color:#27ae60;font-size:1.1rem">&#9733;</span>
-                            <?php else: ?>
-                            <span style="color:#9a94b8"><?= $r['rank'] ?></span>
-                            <?php endif ?>
-                        </td>
+                        <td><?= $r['rank'] == 1 ? '<span style="color:#27ae60">&#9733;</span>' : '<span style="color:#9a94b8">' . $r['rank'] . '</span>' ?></td>
                         <td><?= htmlspecialchars($r['candidate_name']) ?></td>
                         <td style="text-align:right;color:#6b6494"><?= $r['total_votes'] ?></td>
                         <td style="text-align:right;color:var(--e-primary);font-weight:600"><?= $r['total_points'] ?></td>
@@ -335,39 +358,30 @@ ob_start();
                 </table>
             </div>
         </div>
-
-        <!-- Chart -->
         <div class="uk-width-1-2@l">
-            <div class="e-card" style="height:100%;min-height:200px">
-                <canvas id="<?= $chartId ?>" style="max-height:320px"></canvas>
+            <div class="e-card" style="height:100%;min-height:180px">
+                <canvas id="<?= $chartId ?>" style="max-height:300px"></canvas>
             </div>
         </div>
     </div>
 </div>
-
 <script>
 (function(){
     var ctx = document.getElementById('<?= $chartId ?>');
     if (!ctx) return;
-    var labels = <?= json_encode($labels, JSON_UNESCAPED_UNICODE) ?>;
-    var values = <?= json_encode($values) ?>;
-    var bgColors = labels.map(function(l){
-        return l === <?= json_encode($winner, JSON_UNESCAPED_UNICODE) ?> ? '#27ae60' : '#7B68EE';
-    });
     new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: labels,
+            labels: <?= json_encode($labels, JSON_UNESCAPED_UNICODE) ?>,
             datasets: [{
                 label: '<?= addslashes(__('total_points')) ?>',
-                data: values,
-                backgroundColor: bgColors,
+                data: <?= json_encode($values) ?>,
+                backgroundColor: <?= json_encode(array_map(fn($r) => $r['rank'] == 1 ? '#27ae60' : '#7B68EE', $rows)) ?>,
                 borderRadius: 6
             }]
         },
         options: {
-            indexAxis: 'y',
-            responsive: true,
+            indexAxis: 'y', responsive: true,
             plugins: { legend: { display: false } },
             scales: {
                 x: { beginAtZero: true, grid: { color: '#f0eeff' } },
@@ -377,8 +391,167 @@ ob_start();
     });
 })();
 </script>
+<?php endforeach ?>
+<?php endif ?>
+
+<?php elseif ($tab === 'review' && $isOpen): ?>
+
+<!-- Dedup / Candidate review tab -->
+<div class="uk-flex uk-flex-between uk-flex-middle uk-margin-bottom">
+    <p style="color:#9a94b8;font-size:.875rem;margin:0"><?= __('dedup_intro') ?></p>
+    <div style="font-size:.85rem;color:#9a94b8;white-space:nowrap;margin-left:16px">
+        <strong style="color:var(--e-primary)"><?= $pendingCount ?></strong> da rivedere
+        &nbsp;·&nbsp;
+        <strong style="color:#27ae60"><?= $reviewedCount ?></strong> revisionati
+    </div>
+</div>
+
+<?php if (empty($dedupQueue)): ?>
+<div class="e-card uk-text-center" style="padding:60px">
+    <span uk-icon="icon:check;ratio:2" style="color:#27ae60"></span>
+    <p style="color:#9a94b8;margin-top:12px">Nessuna candidatura in attesa di revisione.</p>
+</div>
+<?php else:
+    $currentCat = null;
+    foreach ($dedupQueue as $item):
+        if ($item['category_id'] !== $currentCat):
+            if ($currentCat !== null) echo '</div>';
+            $currentCat = $item['category_id'];
+?>
+<h3 style="font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--e-accent);margin:20px 0 8px">
+    <?= htmlspecialchars($item['category_name']) ?>
+</h3>
+<div>
+<?php endif ?>
+
+<div class="e-card uk-margin-small-bottom" style="border-left:4px solid <?= $item['similarity_score'] >= 85 ? '#e74c3c' : ($item['similarity_score'] >= 70 ? '#f39c12' : '#9a94b8') ?>;padding:16px 20px">
+    <div class="uk-grid-small" uk-grid>
+
+        <div class="uk-width-1-3@m">
+            <p style="font-size:.68rem;text-transform:uppercase;letter-spacing:.07em;color:#9a94b8;margin:0 0 4px">Nome inserito</p>
+            <p style="font-size:.95rem;font-weight:700;margin:0 0 2px"><?= htmlspecialchars($item['new_cand_name'] ?? $item['raw_input']) ?></p>
+            <p style="font-size:.75rem;color:#9a94b8;margin:0">
+                Normalizzato: <code><?= htmlspecialchars($item['normalized_input']) ?></code>
+            </p>
+        </div>
+
+        <div class="uk-width-1-6@m uk-text-center uk-flex uk-flex-middle uk-flex-center">
+            <div>
+                <div style="font-size:1.3rem;font-weight:800;color:<?= $item['similarity_score'] >= 85 ? '#e74c3c' : ($item['similarity_score'] >= 70 ? '#f39c12' : '#6b6494') ?>">
+                    <?= $item['similarity_score'] ?>%
+                </div>
+                <div style="font-size:.68rem;color:#9a94b8">somiglianza</div>
+            </div>
+        </div>
+
+        <div class="uk-width-1-2@m">
+            <p style="font-size:.68rem;text-transform:uppercase;letter-spacing:.07em;color:#9a94b8;margin:0 0 4px">
+                Possibile corrispondenza
+            </p>
+            <?php if ($item['suggested_name']): ?>
+            <p style="font-size:.95rem;font-weight:600;margin:0 0 10px;color:var(--e-primary)">
+                <?= htmlspecialchars($item['suggested_name']) ?>
+            </p>
+            <?php else: ?>
+            <p style="color:#9a94b8;margin:0 0 10px;font-size:.875rem">Nessun suggerimento</p>
+            <?php endif ?>
+
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+                <!-- Merge -->
+                <form method="post">
+                    <?= Csrf::field() ?>
+                    <input type="hidden" name="_action" value="merge">
+                    <input type="hidden" name="queue_id" value="<?= $item['id'] ?>">
+                    <input type="hidden" name="source_candidate_id" value="<?= $item['new_cand_id'] ?>">
+                    <div style="margin-bottom:6px">
+                        <select name="target_candidate_id" class="uk-select uk-form-small" style="width:210px">
+                            <?php foreach ($candByCategory[$item['category_id']] ?? [] as $c):
+                                if ($c['id'] == $item['new_cand_id']) continue; ?>
+                            <option value="<?= $c['id'] ?>" <?= $c['id'] == $item['suggested_candidate_id'] ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($c['name']) ?>
+                            </option>
+                            <?php endforeach ?>
+                        </select>
+                    </div>
+                    <div style="margin-bottom:6px">
+                        <input class="uk-input uk-form-small" type="text" name="canonical_override"
+                               placeholder="Nome canonico personalizzato (opzionale)" style="width:210px">
+                    </div>
+                    <button class="uk-button uk-button-primary uk-button-small">
+                        <span uk-icon="icon:link;ratio:.8"></span> Unisci
+                    </button>
+                </form>
+
+                <!-- Keep -->
+                <form method="post">
+                    <?= Csrf::field() ?>
+                    <input type="hidden" name="_action" value="keep">
+                    <input type="hidden" name="queue_id" value="<?= $item['id'] ?>">
+                    <button class="uk-button uk-button-default uk-button-small">Mantieni separato</button>
+                </form>
+
+                <!-- Exclude -->
+                <form method="post">
+                    <?= Csrf::field() ?>
+                    <input type="hidden" name="_action" value="exclude">
+                    <input type="hidden" name="queue_id" value="<?= $item['id'] ?>">
+                    <input type="hidden" name="candidate_id" value="<?= $item['new_cand_id'] ?>">
+                    <button class="uk-button uk-button-link uk-button-small"
+                            data-confirm="Escludere questo candidato dai risultati?"
+                            style="color:#e74c3c">
+                        Escludi
+                    </button>
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>
 
 <?php endforeach ?>
+<?php if ($currentCat !== null) echo '</div>'; ?>
+<?php endif ?>
+
+<?php if (!empty($aliases)): ?>
+<hr class="uk-margin-medium-top">
+<h3 style="font-size:.82rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#9a94b8;margin-bottom:12px">
+    Dizionario alias (applicati automaticamente alle prossime edizioni)
+</h3>
+<div class="e-table">
+    <table class="uk-table uk-table-hover uk-table-divider uk-table-small uk-margin-remove">
+        <thead>
+            <tr>
+                <th>Categoria</th>
+                <th>Alias (normalizzato)</th>
+                <th>→ Nome canonico</th>
+                <th>Creato da</th>
+                <th style="width:40px"></th>
+            </tr>
+        </thead>
+        <tbody>
+        <?php foreach ($aliases as $alias): ?>
+        <tr>
+            <td style="color:var(--e-accent);font-weight:600"><?= htmlspecialchars($alias['category_name']) ?></td>
+            <td><code><?= htmlspecialchars($alias['alias']) ?></code></td>
+            <td><strong><?= htmlspecialchars($alias['canonical_name']) ?></strong></td>
+            <td style="color:#9a94b8"><?= htmlspecialchars($alias['created_by_name'] ?? '—') ?></td>
+            <td>
+                <form method="post">
+                    <?= Csrf::field() ?>
+                    <input type="hidden" name="_action" value="delete_alias">
+                    <input type="hidden" name="alias_id" value="<?= $alias['id'] ?>">
+                    <button style="background:none;border:none;cursor:pointer;padding:0;color:#e74c3c"
+                            uk-icon="icon:trash;ratio:.8"
+                            data-confirm="Eliminare questo alias?"></button>
+                </form>
+            </td>
+        </tr>
+        <?php endforeach ?>
+        </tbody>
+    </table>
+</div>
+<?php endif ?>
+
 <?php endif ?>
 
 <?php

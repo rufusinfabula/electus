@@ -29,22 +29,22 @@ return [
 
     // Navigation
     'nav_dashboard'  => 'Tableau de bord',
-    'nav_events'     => 'Événements',
+    'nav_events'     => 'Scrutins',
     'nav_users'      => 'Utilisateurs',
     'nav_settings'   => 'Paramètres',
 
     // Dashboard
     'dashboard_title'       => 'Tableau de bord',
-    'dashboard_events_total'=> 'Total événements',
-    'dashboard_active'      => 'Actifs',
+    'dashboard_events_total'=> 'Total scrutins',
+    'dashboard_active'      => 'En cours',
     'dashboard_votes_today' => 'Votes aujourd\'hui',
 
-    // Events
-    'events_title'       => 'Événements',
-    'event_new'          => 'Nouvel événement',
-    'event_edit'         => 'Modifier l\'événement',
-    'event_saved'        => 'Événement enregistré.',
-    'event_deleted'      => 'Événement supprimé.',
+    // Events / Scrutins
+    'events_title'       => 'Scrutins',
+    'event_new'          => 'Nouveau scrutin',
+    'event_edit'         => 'Modifier le scrutin',
+    'event_saved'        => 'Scrutin enregistré.',
+    'event_deleted'      => 'Scrutin supprimé.',
     'event_slug'         => 'Identifiant',
     'event_type'         => 'Type',
     'event_access_mode'  => 'Mode d\'accès',
@@ -105,15 +105,17 @@ return [
     'voted'            => 'A voté',
     'not_voted'        => 'N\'a pas voté',
 
-    // Deduplication
-    'dedup_title'      => 'File de déduplication',
-    'dedup_raw'        => 'Saisie originale',
+    // Candidate review (formerly deduplication)
+    'dedup_title'      => 'Révision des candidatures',
+    'dedup_tab'        => 'Candidatures',
+    'dedup_raw'        => 'Nom soumis',
     'dedup_normalized' => 'Normalisé',
-    'dedup_suggestion' => 'Correspondance suggérée',
-    'dedup_score'      => 'Score',
+    'dedup_suggestion' => 'Correspondance possible',
+    'dedup_score'      => 'Similarité',
     'dedup_merge'      => 'Fusionner',
     'dedup_keep'       => 'Conserver séparé',
     'dedup_exclude'    => 'Exclure',
+    'dedup_intro'      => 'Ces noms pourraient être des doublons. Fusionnez-les pour éviter les votes divisés, conservez-les séparés s\'il s\'agit de personnes différentes, ou excluez-les des résultats.',
 
     // Results
     'results_title'          => 'Résultats',

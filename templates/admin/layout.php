@@ -68,7 +68,7 @@
             <?php if (!empty($currentEventId)): ?>
             <li class="uk-nav-sub-item <?= ($activeMenu ?? '') === 'rounds' ? 'uk-active' : '' ?>">
                 <a href="/admin/rounds.php?event_id=<?= $currentEventId ?>">
-                    <span uk-icon="list"></span> <?= __('rounds_title') ?>
+                    <span uk-icon="grid"></span> Panoramica
                 </a>
             </li>
             <li class="uk-nav-sub-item <?= ($activeMenu ?? '') === 'categories' ? 'uk-active' : '' ?>">
@@ -79,11 +79,6 @@
             <li class="uk-nav-sub-item <?= ($activeMenu ?? '') === 'voters' ? 'uk-active' : '' ?>">
                 <a href="/admin/voters.php?event_id=<?= $currentEventId ?>">
                     <span uk-icon="users"></span> <?= __('voters_title') ?>
-                </a>
-            </li>
-            <li class="uk-nav-sub-item <?= ($activeMenu ?? '') === 'results' ? 'uk-active' : '' ?>">
-                <a href="/admin/rounds.php?event_id=<?= $currentEventId ?>#results">
-                    <span uk-icon="bar-chart"></span> <?= __('results_title') ?>
                 </a>
             </li>
             <?php endif ?>
