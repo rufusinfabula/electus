@@ -196,11 +196,10 @@ ob_start();
             <!-- Theme picker -->
             <div class="uk-width-1-1">
                 <label class="uk-form-label" style="font-weight:700;font-size:.85rem">
-                    Tema grafico (pagine pubbliche di voto)
+                    Tema grafico pagine pubbliche
                 </label>
-                <p style="font-size:.78rem;color:#9a94b8;margin:2px 0 14px">
-                    Scegli la palette applicata alla scheda di voto e ai risultati pubblici.
-                    Il pannello admin mantiene sempre il tema predefinito.
+                <p style="font-size:.78rem;color:#9a94b8;margin:2px 0 12px">
+                    Palette applicata alla scheda di voto e ai risultati che vedono i votanti.
                 </p>
                 <?php
                 $currentPreset = $event['theme_preset'] ?? null;
@@ -208,46 +207,69 @@ ob_start();
                     ? (is_array($event['theme_colors']) ? $event['theme_colors'] : json_decode($event['theme_colors'], true))
                     : [];
                 ?>
-                <div class="e-theme-grid">
-                <?php foreach (Theme::PALETTES as $key => $pal): ?>
-                <label class="e-theme-card <?= $currentPreset === $key ? 'e-theme-selected' : '' ?>">
-                    <input type="radio" name="theme_preset" value="<?= $key ?>"
-                           <?= $currentPreset === $key ? 'checked' : '' ?>
-                           style="position:absolute;opacity:0;pointer-events:none">
-                    <!-- Mini preview -->
-                    <div class="e-theme-preview" style="background:<?= htmlspecialchars($pal['bg']) ?>">
-                        <div class="e-theme-preview-bar" style="background:<?= htmlspecialchars($pal['primary']) ?>">
-                            <span style="color:#fff;font-size:9px;font-weight:700;padding:0 6px">
-                                <?= htmlspecialchars($pal['label']) ?>
-                            </span>
+                <input type="hidden" name="theme_preset" id="ev_theme_input" value="<?= htmlspecialchars($currentPreset ?? '') ?>">
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">
+                <?php foreach (Theme::PALETTES as $key => $pal):
+                    $sel = ($currentPreset === $key);
+                ?>
+                <div class="e-ptc" data-key="<?= $key ?>" onclick="selectEvTheme('<?= $key ?>')"
+                     style="border:2px solid <?= $sel ? 'var(--e-primary)' : '#e8e6f0' ?>;
+                            border-radius:10px;overflow:hidden;cursor:pointer;background:#fff;
+                            box-shadow:<?= $sel ? '0 0 0 3px rgba(76,61,158,.12)' : 'none' ?>">
+                    <!-- Colour strip -->
+                    <div style="height:36px;background:<?= htmlspecialchars($pal['bg']) ?>">
+                        <div style="height:10px;background:<?= htmlspecialchars($pal['primary']) ?>"></div>
+                        <div style="padding:3px 6px;display:flex;gap:3px;align-items:center">
+                            <div style="height:3px;border-radius:2px;flex:2;background:<?= htmlspecialchars($pal['primary']) ?>;opacity:.5"></div>
+                            <div style="height:3px;border-radius:2px;flex:1;background:<?= htmlspecialchars($pal['accent']) ?>;opacity:.6"></div>
                         </div>
-                        <div style="padding:6px 8px;display:flex;gap:4px;flex-wrap:wrap">
-                            <span style="background:<?= htmlspecialchars($pal['primary']) ?>;color:#fff;border-radius:4px;padding:2px 6px;font-size:8px;font-weight:700">Vota</span>
-                            <span style="background:<?= htmlspecialchars($pal['accent']) ?>;color:#111;border-radius:4px;padding:2px 6px;font-size:8px;font-weight:700">OK</span>
-                        </div>
-                        <div style="padding:0 8px 6px;display:flex;gap:3px">
-                            <div style="height:5px;border-radius:3px;flex:2;background:<?= htmlspecialchars($pal['primary']) ?>"></div>
-                            <div style="height:5px;border-radius:3px;flex:1;background:<?= htmlspecialchars($pal['secondary']) ?>"></div>
+                        <div style="padding:0 6px;display:flex;gap:3px">
+                            <div style="height:10px;width:18px;border-radius:3px;background:<?= htmlspecialchars($pal['primary']) ?>"></div>
+                            <div style="height:10px;width:14px;border-radius:3px;background:<?= htmlspecialchars($pal['accent']) ?>"></div>
                         </div>
                     </div>
-                    <div class="e-theme-label">
+                    <!-- Label row -->
+                    <div style="padding:5px 7px;display:flex;align-items:center;gap:4px">
+                        <div style="display:flex;gap:3px;flex:1">
+                            <div style="width:10px;height:10px;border-radius:50%;background:<?= htmlspecialchars($pal['primary']) ?>"></div>
+                            <div style="width:10px;height:10px;border-radius:50%;background:<?= htmlspecialchars($pal['secondary']) ?>"></div>
+                            <div style="width:10px;height:10px;border-radius:50%;background:<?= htmlspecialchars($pal['accent']) ?>"></div>
+                        </div>
+                        <?php if ($sel): ?>
+                        <div id="ev_check_<?= $key ?>" style="width:14px;height:14px;border-radius:50%;background:var(--e-primary);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                            <span style="color:#fff;font-size:8px;font-weight:800">✓</span>
+                        </div>
+                        <?php else: ?>
+                        <div id="ev_check_<?= $key ?>" style="width:14px;height:14px;border-radius:50%;border:2px solid #e0ddf0;flex-shrink:0"></div>
+                        <?php endif ?>
+                    </div>
+                    <div style="padding:0 7px 6px;font-size:.7rem;font-weight:600;color:#2d2a40;line-height:1.2">
                         <?= htmlspecialchars($pal['label']) ?>
-                        <div class="e-theme-swatches">
-                            <span style="background:<?= htmlspecialchars($pal['primary']) ?>"></span>
-                            <span style="background:<?= htmlspecialchars($pal['secondary']) ?>"></span>
-                            <span style="background:<?= htmlspecialchars($pal['accent']) ?>"></span>
-                            <span style="background:<?= htmlspecialchars($pal['bg']) ?>;border:1px solid #ddd"></span>
-                            <span style="background:<?= htmlspecialchars($pal['text']) ?>"></span>
-                        </div>
                     </div>
-                </label>
+                </div>
                 <?php endforeach ?>
                 </div>
 
+                <script>
+                function selectEvTheme(key) {
+                    document.getElementById('ev_theme_input').value = key;
+                    document.querySelectorAll('.e-ptc').forEach(function(c) {
+                        var k = c.dataset.key, s = k === key;
+                        c.style.borderColor = s ? 'var(--e-primary)' : '#e8e6f0';
+                        c.style.boxShadow   = s ? '0 0 0 3px rgba(76,61,158,.12)' : 'none';
+                        var chk = document.getElementById('ev_check_' + k);
+                        if (!chk) return;
+                        chk.style.background = s ? 'var(--e-primary)' : 'transparent';
+                        chk.style.border     = s ? 'none' : '2px solid #e0ddf0';
+                        chk.innerHTML        = s ? '<span style="color:#fff;font-size:8px;font-weight:800">✓</span>' : '';
+                    });
+                }
+                </script>
+
                 <!-- Custom color overrides -->
-                <details class="uk-margin-top" style="font-size:.82rem">
+                <details style="font-size:.82rem">
                     <summary style="color:var(--e-primary);cursor:pointer;font-weight:600">
-                        Personalizza colori (opzionale — sovrascrive la palette selezionata)
+                        Personalizza colori (opzionale)
                     </summary>
                     <div class="uk-grid-small uk-margin-small-top" uk-grid>
                         <?php foreach (['primary'=>'Primary','secondary'=>'Secondary','accent'=>'Accent','bg'=>'Background','text'=>'Testo'] as $k => $lbl): ?>
