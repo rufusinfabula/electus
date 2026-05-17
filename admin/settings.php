@@ -35,17 +35,23 @@ ob_start();
 <h1 class="e-page-title">Impostazioni sistema</h1>
 
 <div class="e-card">
-    <h3 style="font-size:1rem;font-weight:700;margin:0 0 4px">Tema pannello admin</h3>
-    <p style="font-size:.82rem;color:#9a94b8;margin:0 0 24px">
-        Seleziona la palette di colori per tutte le pagine del pannello di amministrazione.
-        Il tema si applica immediatamente dopo il salvataggio.
-    </p>
-
     <form method="post" id="theme-form">
         <?= Csrf::field() ?>
         <input type="hidden" name="admin_theme" id="admin_theme_input" value="<?= htmlspecialchars($currentPreset) ?>">
 
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px">
+        <div class="uk-flex uk-flex-middle uk-flex-between" style="margin-bottom:20px">
+            <div>
+                <h3 style="font-size:1rem;font-weight:700;margin:0 0 2px">Tema pannello admin</h3>
+                <p style="font-size:.82rem;color:#9a94b8;margin:0">
+                    Seleziona la palette di colori per tutte le pagine del pannello di amministrazione.
+                </p>
+            </div>
+            <button type="submit" class="uk-button uk-button-primary" style="flex-shrink:0">
+                <span uk-icon="icon:check;ratio:.85"></span> Salva tema
+            </button>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:8px">
         <?php foreach (Theme::PALETTES as $key => $pal):
             $selected = ($currentPreset === $key);
         ?>
@@ -101,9 +107,6 @@ ob_start();
         <?php endforeach ?>
         </div>
 
-        <button type="submit" class="uk-button uk-button-primary">
-            <span uk-icon="icon:check;ratio:.85"></span> Salva tema
-        </button>
     </form>
 </div>
 
