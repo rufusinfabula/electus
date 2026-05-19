@@ -5,6 +5,7 @@ declare(strict_types=1);
 require __DIR__ . '/bootstrap.php';
 
 use Electus\Core\Auth;
+use Electus\Core\CatTerm;
 use Electus\Core\Csrf;
 use Electus\Core\Flash;
 use Electus\Models\Category;
@@ -55,7 +56,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $categories     = Category::forEvent($eventId);
-$pageTitle      = __('categories_title');
+$catTermS       = CatTerm::label($event, 's');
+$catTermP       = CatTerm::label($event, 'p');
+$pageTitle      = $catTermP;
 $activeMenu     = 'categories';
 $currentEventId = $eventId;
 
@@ -65,7 +68,7 @@ ob_start();
     <a href="/admin/events-edit.php?id=<?= $eventId ?>" uk-icon="arrow-left" class="uk-icon-link"></a>
     <div>
         <p style="margin:0;font-size:.8rem;color:#9a94b8"><?= htmlspecialchars($event['name']) ?></p>
-        <h1 class="e-page-title uk-margin-remove"><?= __('categories_title') ?></h1>
+        <h1 class="e-page-title uk-margin-remove"><?= $catTermP ?></h1>
     </div>
 </div>
 
@@ -75,7 +78,7 @@ ob_start();
     <div class="uk-width-2-3@m">
         <?php if (empty($categories)): ?>
         <div class="e-card uk-text-center" style="padding:40px">
-            <p style="color:#9a94b8"><?= __('categories_title') ?>: 0</p>
+            <p style="color:#9a94b8"><?= $catTermP ?>: 0</p>
         </div>
         <?php else: ?>
         <div class="e-table">
@@ -147,7 +150,7 @@ ob_start();
     <!-- Add category form -->
     <div class="uk-width-1-3@m">
         <div class="e-card">
-            <h3 style="font-size:1rem;font-weight:600;margin-bottom:16px"><?= __('category_new') ?></h3>
+            <h3 style="font-size:1rem;font-weight:600;margin-bottom:16px">Nuova <?= $catTermS ?></h3>
             <form method="post">
                 <?= Csrf::field() ?>
                 <input type="hidden" name="_action" value="create">

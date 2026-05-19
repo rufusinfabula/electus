@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS `events` (
   `results_public`     TINYINT(1) NOT NULL DEFAULT 1,
   `theme_preset`       VARCHAR(50) NULL,
   `theme_colors`       JSON NULL,
+  `cat_term`           VARCHAR(50) NULL,
   `status`             ENUM('draft','active','closed','archived') NOT NULL DEFAULT 'draft',
   `created_by`         INT UNSIGNED NOT NULL,
   `created_at`         DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,

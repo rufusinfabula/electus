@@ -42,8 +42,8 @@ class Event
         $stmt = $pdo->prepare(
             'INSERT INTO events
              (name, slug, description, type, access_mode, email_verification,
-              results_public, theme_preset, theme_colors, status, created_by)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+              results_public, theme_preset, theme_colors, cat_term, status, created_by)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         );
         $stmt->execute([
             $data['name'],
@@ -55,6 +55,7 @@ class Event
             (int) ($data['results_public'] ?? 1),
             $data['theme_preset'] ?? null,
             $data['theme_colors'] ?? null,
+            $data['cat_term'] ?? null,
             $data['status'],
             $createdBy,
         ]);
@@ -68,7 +69,7 @@ class Event
             'UPDATE events SET
              name = ?, slug = ?, description = ?, type = ?, access_mode = ?,
              email_verification = ?, results_public = ?, theme_preset = ?, theme_colors = ?,
-             status = ?
+             cat_term = ?, status = ?
              WHERE id = ?'
         );
         $stmt->execute([
@@ -81,6 +82,7 @@ class Event
             (int) ($data['results_public'] ?? 1),
             $data['theme_preset'] ?? null,
             $data['theme_colors'] ?? null,
+            $data['cat_term'] ?? null,
             $data['status'],
             $id,
         ]);

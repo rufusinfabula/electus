@@ -5,6 +5,7 @@ declare(strict_types=1);
 require __DIR__ . '/bootstrap.php';
 
 use Electus\Core\Auth;
+use Electus\Core\CatTerm;
 use Electus\Core\Csrf;
 use Electus\Core\Database;
 use Electus\Core\Flash;
@@ -91,6 +92,8 @@ $modelIcons = [
     'weighted'     => 'more',
 ];
 
+$catTermS       = CatTerm::label($event, 's');
+$catTermP       = CatTerm::label($event, 'p');
 $pageTitle      = htmlspecialchars($event['name']);
 $activeMenu     = 'rounds';
 $currentEventId = $eventId;
@@ -138,7 +141,7 @@ ob_start();
     <div class="uk-width-auto">
         <div class="e-stat" style="min-width:110px">
             <div class="e-stat-value"><?= $categoriesCount ?></div>
-            <div class="e-stat-label"><?= __('categories_title') ?></div>
+            <div class="e-stat-label"><?= $catTermP ?></div>
         </div>
     </div>
     <div class="uk-width-auto">

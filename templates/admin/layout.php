@@ -72,10 +72,14 @@
 
             <?php if (!empty($currentEventId)):
                 if (empty($currentEventName)) {
-                    $__stmt = \Electus\Core\Database::get()->prepare('SELECT name FROM events WHERE id = ? LIMIT 1');
+                    $__stmt = \Electus\Core\Database::get()->prepare('SELECT name, cat_term FROM events WHERE id = ? LIMIT 1');
                     $__stmt->execute([$currentEventId]);
-                    $currentEventName = $__stmt->fetchColumn() ?: '';
+                    $__evRow = $__stmt->fetch(\PDO::FETCH_ASSOC) ?: [];
+                    $currentEventName = $__evRow['name'] ?? '';
+                } else {
+                    $__evRow = $event ?? [];
                 }
+                $__catTermP = \Electus\Core\CatTerm::label($__evRow, 'p');
                 // Load all rounds for accordion
                 $__stmt = \Electus\Core\Database::get()->prepare(
                     'SELECT id, round_number, label, status FROM event_rounds
@@ -110,7 +114,7 @@
             </li>
             <li class="<?= $__activeMenu === 'categories' ? 'uk-active' : '' ?>">
                 <a href="/admin/categories.php?event_id=<?= $currentEventId ?>">
-                    <span uk-icon="icon:tag;ratio:.85"></span> <?= __('categories_title') ?>
+                    <span uk-icon="icon:tag;ratio:.85"></span> <?= $__catTermP ?>
                 </a>
             </li>
             <li class="<?= $__activeMenu === 'voters' ? 'uk-active' : '' ?>">

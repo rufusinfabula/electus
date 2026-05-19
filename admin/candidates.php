@@ -5,6 +5,7 @@ declare(strict_types=1);
 require __DIR__ . '/bootstrap.php';
 
 use Electus\Core\Auth;
+use Electus\Core\CatTerm;
 use Electus\Core\Csrf;
 use Electus\Core\Flash;
 use Electus\Models\Candidate;
@@ -89,6 +90,8 @@ $excluded       = Candidate::forRound($roundId, 'excluded');
 $merged         = Candidate::forRound($roundId, 'merged');
 $isOpen         = $round['model'] === 'open';
 
+$catTermS       = CatTerm::label($event, 's');
+$catTermP       = CatTerm::label($event, 'p');
 $pageTitle      = __('candidates_title');
 $activeMenu     = 'candidates';
 $currentEventId = $eventId;
@@ -126,7 +129,7 @@ ob_start();
 
 <?php if (empty($categories)): ?>
 <div class="uk-alert-warning" uk-alert>
-    <p>No categories defined for this event. <a href="/admin/categories.php?event_id=<?= $eventId ?>">Add categories first</a>.</p>
+    <p>Nessuna <?= $catTermS ?> definita per questa votazione. <a href="/admin/categories.php?event_id=<?= $eventId ?>">Aggiungi prima le <?= $catTermP ?></a>.</p>
 </div>
 <?php else: ?>
 

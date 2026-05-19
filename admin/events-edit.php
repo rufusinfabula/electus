@@ -5,6 +5,7 @@ declare(strict_types=1);
 require __DIR__ . '/bootstrap.php';
 
 use Electus\Core\Auth;
+use Electus\Core\CatTerm;
 use Electus\Core\Csrf;
 use Electus\Core\Flash;
 use Electus\Core\Theme;
@@ -38,6 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'results_public'     => isset($_POST['results_public']) ? 1 : 0,
         'status'             => $_POST['status'] ?? 'draft',
         'theme_preset'       => $_POST['theme_preset'] ?? null,
+        'cat_term'           => isset(CatTerm::PRESETS[$_POST['cat_term'] ?? '']) ? $_POST['cat_term'] : null,
         'theme_colors'       => json_encode(array_filter([
             'primary'   => trim($_POST['theme_primary']   ?? ''),
             'secondary' => trim($_POST['theme_secondary'] ?? ''),
@@ -291,6 +293,36 @@ ob_start();
                 </details>
             </div>
 
+        </div>
+
+        <hr>
+
+        <!-- Category terminology picker -->
+        <div class="uk-grid-medium" uk-grid>
+            <div class="uk-width-1-1">
+                <label class="uk-form-label" style="font-weight:700;font-size:.85rem">
+                    Come si chiamano le scelte di voto?
+                </label>
+                <p style="font-size:.78rem;color:#9a94b8;margin:2px 0 12px">
+                    Termine usato nell'admin per identificare i gruppi di candidati (es. Cariche per una votazione sindacale, Premi per un concorso&hellip;).
+                </p>
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:520px">
+                <?php foreach (CatTerm::PRESETS as $ctKey => $ctPal):
+                    $ctSel = ($event['cat_term'] ?? CatTerm::DEFAULT_PRESET) === $ctKey;
+                ?>
+                <label class="e-ctlabel" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;
+                              border:2px solid <?= $ctSel ? 'var(--e-primary)' : '#e8e6f0' ?>;cursor:pointer;
+                              background:<?= $ctSel ? '#f5f3ff' : '#fff' ?>;transition:border-color .1s"
+                       onclick="document.querySelectorAll('.e-ctlabel').forEach(function(l){l.style.borderColor='#e8e6f0';l.style.background='#fff'});this.style.borderColor='var(--e-primary)';this.style.background='#f5f3ff'">
+                    <input type="radio" name="cat_term" value="<?= $ctKey ?>"
+                           class="uk-radio" <?= $ctSel ? 'checked' : '' ?>>
+                    <span style="font-size:.8rem;font-weight:600;color:var(--e-text)">
+                        <?= htmlspecialchars($ctPal['it']['s']) ?> / <?= htmlspecialchars($ctPal['it']['p']) ?>
+                    </span>
+                </label>
+                <?php endforeach ?>
+                </div>
+            </div>
         </div>
 
         <div class="uk-margin-top uk-flex" style="gap:12px">

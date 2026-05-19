@@ -5,6 +5,7 @@ declare(strict_types=1);
 require __DIR__ . '/bootstrap.php';
 
 use Electus\Core\Auth;
+use Electus\Core\CatTerm;
 use Electus\Core\Csrf;
 use Electus\Core\Flash;
 use Electus\Models\Category;
@@ -119,6 +120,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $cfg            = $round['config'] ?? [];
+$catTermS       = CatTerm::label($event, 's');
+$catTermP       = CatTerm::label($event, 'p');
 $pageTitle      = $round ? __('round_edit') : __('round_new');
 $activeMenu     = 'rounds';
 $currentEventId = $eventId;
@@ -219,10 +222,10 @@ ob_start();
     <?php if (!empty($allCategories)): ?>
     <hr style="margin:24px 0">
     <h4 style="font-size:.9rem;font-weight:700;color:var(--e-primary);margin-bottom:4px">
-        Categorie attive in questo turno
+        <?= $catTermP ?> attive in questo turno
     </h4>
     <p style="font-size:.8rem;color:#9a94b8;margin-bottom:16px">
-        Seleziona quali categorie sono in gioco. Per ogni categoria puoi definire quanti candidati avanzano al turno successivo.
+        Seleziona quali <?= $catTermP ?> sono in gioco. Per ogni <?= $catTermS ?> puoi definire quanti candidati avanzano al turno successivo.
     </p>
 
     <?php
@@ -243,7 +246,7 @@ ob_start();
         <thead>
             <tr style="background:var(--e-bg)">
                 <th style="width:32px"></th>
-                <th>Categoria</th>
+                <th><?= $catTermS ?></th>
                 <th style="width:160px">Avanzamento</th>
                 <th style="width:100px">Top-N</th>
                 <?php if ($nextRound): ?><th style="width:180px">Mappa a (turno <?= $nextRound['round_number'] ?>)</th><?php endif ?>

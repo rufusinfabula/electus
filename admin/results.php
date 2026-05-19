@@ -5,6 +5,7 @@ declare(strict_types=1);
 require __DIR__ . '/bootstrap.php';
 
 use Electus\Core\Auth;
+use Electus\Core\CatTerm;
 use Electus\Core\Csrf;
 use Electus\Core\Flash;
 use Electus\Models\Candidate;
@@ -151,6 +152,8 @@ foreach ($allCandidates as $c) { $candByCategory[$c['category_id']][] = $c; }
 
 $pendingCount = count($dedupQueue);
 
+$catTermS       = CatTerm::label($event, 's');
+$catTermP       = CatTerm::label($event, 'p');
 $pageTitle      = __('results_title') . ' — ' . __('round_number') . $round['round_number'];
 $activeMenu     = 'results';
 $currentEventId = $eventId;
@@ -537,7 +540,7 @@ ob_start();
     <table class="uk-table uk-table-hover uk-table-divider uk-table-small uk-margin-remove">
         <thead>
             <tr>
-                <th>Categoria</th>
+                <th><?= $catTermS ?></th>
                 <th>Alias (normalizzato)</th>
                 <th>→ Nome canonico</th>
                 <th>Creato da</th>
