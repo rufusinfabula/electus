@@ -117,58 +117,53 @@ ob_start();
 <!-- Stats row -->
 <div class="uk-grid-small uk-margin-bottom" uk-grid>
     <div class="uk-width-auto">
-        <div class="e-stat" style="min-width:120px">
+        <div class="e-stat" style="min-width:110px">
             <div class="e-stat-value"><?= count($rounds) ?></div>
             <div class="e-stat-label"><?= __('rounds_title') ?></div>
         </div>
     </div>
     <div class="uk-width-auto">
-        <div class="e-stat" style="min-width:120px">
+        <div class="e-stat" style="min-width:110px">
             <div class="e-stat-value"><?= $categoriesCount ?></div>
             <div class="e-stat-label"><?= __('categories_title') ?></div>
         </div>
     </div>
     <div class="uk-width-auto">
-        <div class="e-stat" style="min-width:120px">
+        <div class="e-stat" style="min-width:110px">
             <div class="e-stat-value"><?= $registeredVoters ?></div>
             <div class="e-stat-label"><?= __('voters_title') ?></div>
         </div>
     </div>
     <div class="uk-width-auto">
-        <div class="e-stat" style="min-width:120px">
+        <div class="e-stat" style="min-width:110px">
             <div class="e-stat-value" style="color:var(--e-primary)"><?= $totalVotes ?></div>
             <div class="e-stat-label">Voti totali</div>
         </div>
     </div>
+</div>
 
-    <!-- Public link -->
-    <div class="uk-width-expand">
-        <div class="e-stat" style="display:flex;align-items:center;gap:12px;height:100%">
-            <span uk-icon="icon:link;ratio:.9" style="color:var(--e-accent);flex-shrink:0"></span>
-            <div style="flex:1;min-width:0">
-                <div style="font-size:.7rem;color:#9a94b8;margin-bottom:2px;text-transform:uppercase;letter-spacing:.06em">
-                    Link di voto pubblico
-                </div>
-                <code style="font-size:.8rem;color:<?= $event['status'] === 'active' ? 'var(--e-primary)' : '#9a94b8' ?>;word-break:break-all">
-                    <?= htmlspecialchars($voteUrl) ?>
-                </code>
-                <?php if ($event['status'] !== 'active'): ?>
-                <div style="font-size:.7rem;color:#e67e22;margin-top:2px">
-                    Attiva la votazione per abilitare questo link
-                </div>
-                <?php endif ?>
-            </div>
-            <div style="display:flex;gap:6px;flex-shrink:0">
-                <button onclick="navigator.clipboard.writeText('<?= htmlspecialchars($voteUrl, ENT_QUOTES) ?>');this.innerHTML='&#10003;';setTimeout(()=>this.innerHTML='<span uk-icon=\'icon:copy;ratio:.8\'></span>',1500)"
-                        class="uk-button uk-button-default uk-button-small" title="Copia">
-                    <span uk-icon="icon:copy;ratio:.8"></span>
-                </button>
-                <a href="<?= htmlspecialchars($voteUrl) ?>" target="_blank"
-                   class="uk-button uk-button-default uk-button-small" title="Apri">
-                    <span uk-icon="icon:forward;ratio:.8"></span>
-                </a>
-            </div>
-        </div>
+<!-- Public link strip (full width, always visible) -->
+<?php $isLive = ($event['status'] === 'active'); ?>
+<div class="e-publink-strip<?= $isLive ? ' e-publink-live' : '' ?> uk-margin-bottom">
+    <?php if ($isLive): ?>
+    <span class="e-publink-dot"></span>
+    <span style="font-size:.72rem;font-weight:700;color:#1a7a3c;white-space:nowrap">VOTO APERTO</span>
+    <?php else: ?>
+    <span uk-icon="icon:link;ratio:.8" style="color:#9a94b8;flex-shrink:0"></span>
+    <?php endif ?>
+    <code class="e-publink-url"><?= htmlspecialchars($voteUrl) ?></code>
+    <?php if (!$isLive): ?>
+    <span style="font-size:.72rem;color:#e67e22;white-space:nowrap">Attiva la votazione per abilitare</span>
+    <?php endif ?>
+    <div style="display:flex;gap:6px;flex-shrink:0;margin-left:auto">
+        <button onclick="navigator.clipboard.writeText('<?= htmlspecialchars($voteUrl, ENT_QUOTES) ?>');this.innerHTML='&#10003; Copiato';setTimeout(()=>this.innerHTML='<span uk-icon=\'icon:copy;ratio:.75\'></span> Copia',1800)"
+                class="uk-button uk-button-default uk-button-small">
+            <span uk-icon="icon:copy;ratio:.75"></span> Copia
+        </button>
+        <a href="<?= htmlspecialchars($voteUrl) ?>" target="_blank"
+           class="uk-button uk-button-default uk-button-small" title="Apri in nuova scheda">
+            <span uk-icon="icon:forward;ratio:.75"></span>
+        </a>
     </div>
 </div>
 
@@ -207,25 +202,30 @@ ob_start();
     $roundCats  = Round::categoriesFor((int) $round['id']);
     $isLast     = $i === count($rounds) - 1;
 
-    $steps = [
-        [0, 'Bozza',     'e-badge-draft'],
-        [1, 'In corso',  'e-badge-active'],
-        [2, 'Chiuso',    'e-badge-closed'],
-        [3, 'Validato',  ''],
-        [4, 'Pubblicato','e-badge-active'],
-    ];
+    $stepLabels = ['Bozza', 'In corso', 'Chiuso', 'Validato', 'Pubblicato'];
+    $catCount   = count($roundCats);
+    $showMore   = $catCount > 4;
+    $roundUid   = 'r' . $round['id'];
 ?>
 <!-- Phase block -->
 <div class="e-pipeline-block e-card">
 
     <!-- Round header -->
-    <div class="uk-flex uk-flex-between uk-flex-top">
+    <div class="uk-flex uk-flex-between uk-flex-top" style="gap:12px">
         <div class="uk-flex uk-flex-middle" style="gap:10px">
             <div class="e-pipeline-number"><?= $round['round_number'] ?></div>
             <div>
-                <h3 style="margin:0;font-size:.95rem;font-weight:700;color:var(--e-text)">
-                    <?= $round['label'] ? htmlspecialchars($round['label']) : 'Fase ' . $round['round_number'] ?>
-                </h3>
+                <div class="uk-flex uk-flex-middle" style="gap:6px">
+                    <h3 style="margin:0;font-size:.95rem;font-weight:700;color:var(--e-text)">
+                        <?= $round['label'] ? htmlspecialchars($round['label']) : 'Fase ' . $round['round_number'] ?>
+                    </h3>
+                    <?php if ($round['status'] === 'active' && $event['status'] === 'active'): ?>
+                    <span style="display:inline-flex;align-items:center;gap:4px;font-size:.68rem;font-weight:700;color:#1a7a3c;background:#e6f9ee;padding:2px 8px;border-radius:20px">
+                        <span style="width:6px;height:6px;border-radius:50%;background:#1a7a3c;animation:e-pulse 1.4s ease-in-out infinite"></span>
+                        Live
+                    </span>
+                    <?php endif ?>
+                </div>
                 <p style="margin:0;font-size:.78rem;color:#9a94b8">
                     <span uk-icon="icon:<?= $modelIcons[$round['model']] ?? 'list' ?>;ratio:.8"></span>
                     <?= __('model_' . $round['model']) ?>
@@ -236,16 +236,17 @@ ob_start();
                 </p>
             </div>
         </div>
-        <!-- Lifecycle stepper -->
-        <div style="display:flex;align-items:center;gap:4px;font-size:.7rem;flex-shrink:0">
-            <?php foreach ($steps as [$s, $lbl, $cls]):
+
+        <!-- Lifecycle stepper (dot-based) -->
+        <div class="e-stepper" style="flex-shrink:0">
+            <?php foreach ($stepLabels as $s => $lbl):
                 $done    = $step > $s;
                 $current = $step === $s;
-                if ($s > 0) echo '<span style="color:#ddd">›</span>';
             ?>
-            <span class="<?= $current ? 'e-badge ' . $cls : '' ?>"
-                  style="<?= $done ? 'color:#27ae60;font-weight:700' : ($current ? '' : 'color:#c8c3e0') ?>">
-                <?= $done ? '✓ ' : '' ?><?= $lbl ?>
+            <?php if ($s > 0): ?><span class="e-stepper-sep"></span><?php endif ?>
+            <span class="e-stepper-dot <?= $done ? 'e-step-done' : ($current ? 'e-step-current' : 'e-step-future') ?>"
+                  title="<?= $lbl ?>">
+                <?php if ($current): ?><span class="e-stepper-label"><?= $lbl ?></span><?php endif ?>
             </span>
             <?php endforeach ?>
         </div>
@@ -253,52 +254,64 @@ ob_start();
 
     <!-- Active categories with advancement summary -->
     <?php if (!empty($roundCats)): ?>
-    <div class="e-pipeline-cats">
-        <?php foreach ($roundCats as $cat):
-            $mode  = $cat['advancement_mode'] ?? 'manual';
-            $count = $cat['advancement_count'] ?? null;
+    <div class="e-pipeline-cats<?= $showMore ? ' e-cats-collapsible' : '' ?>" id="cats-<?= $roundUid ?>">
+        <?php foreach ($roundCats as $ci => $cat):
+            $mode     = $cat['advancement_mode'] ?? 'manual';
+            $cnt      = $cat['advancement_count'] ?? null;
             $advLabel = match($mode) {
-                'auto'   => 'top ' . ($count ?? '?') . ' avanzano',
+                'auto'   => 'top ' . ($cnt ?? '?') . ' avanzano',
                 'all'    => 'tutti avanzano',
                 'none'   => 'nessuno avanza',
                 default  => 'avanzamento manuale',
             };
         ?>
-        <div class="e-pipeline-cat">
+        <div class="e-pipeline-cat<?= ($showMore && $ci >= 4) ? ' e-cat-hidden' : '' ?>">
             <span class="e-pipeline-cat-name"><?= htmlspecialchars($cat['name']) ?></span>
             <?php if (!$isLast): ?>
             <span class="e-pipeline-cat-adv e-pipeline-adv-<?= $mode ?>"><?= $advLabel ?></span>
             <?php endif ?>
         </div>
         <?php endforeach ?>
-    </div>
-    <?php endif ?>
-
-    <!-- Active voting banner -->
-    <?php if ($round['status'] === 'active' && $event['status'] === 'active'): ?>
-    <div style="margin-top:12px;padding:8px 12px;background:#f0fdf4;border-radius:8px;display:flex;align-items:center;gap:10px">
-        <span style="font-size:.72rem;color:#27ae60;font-weight:700">● VOTO APERTO</span>
-        <code style="font-size:.75rem;color:#27ae60;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
-            <?= htmlspecialchars($voteUrl) ?>
-        </code>
-        <button onclick="navigator.clipboard.writeText('<?= htmlspecialchars($voteUrl, ENT_QUOTES) ?>');this.textContent='Copiato!';setTimeout(()=>this.textContent='Copia',1500)"
-                style="background:#27ae60;color:#fff;border:none;padding:3px 10px;border-radius:6px;font-size:.72rem;cursor:pointer;flex-shrink:0">
-            Copia
+        <?php if ($showMore): ?>
+        <button type="button" class="e-cats-more" onclick="toggleCats('<?= $roundUid ?>', this)">
+            +<?= $catCount - 4 ?> altre
         </button>
+        <?php endif ?>
     </div>
     <?php endif ?>
 
     <!-- Actions -->
-    <div class="uk-flex uk-flex-wrap" style="gap:6px;margin-top:14px;padding-top:12px;border-top:1px solid #f5f3ff">
+    <div class="e-round-actions">
+        <!-- Primary contextual action -->
+        <?php if ($round['status'] === 'active'): ?>
+        <a href="/admin/candidates.php?round_id=<?= $round['id'] ?>"
+           class="uk-button uk-button-primary uk-button-small">
+            <span uk-icon="icon:list;ratio:.75"></span> Candidati
+        </a>
+        <?php elseif ($round['status'] === 'closed'): ?>
+        <a href="/admin/results.php?round_id=<?= $round['id'] ?>"
+           class="uk-button uk-button-primary uk-button-small">
+            <span uk-icon="icon:bar-chart;ratio:.75"></span> Risultati<?= $round['results_released'] ? ' ✓' : '' ?>
+        </a>
+        <?php else: ?>
         <a href="/admin/candidates.php?round_id=<?= $round['id'] ?>"
            class="uk-button uk-button-default uk-button-small">Candidati</a>
-        <a href="/admin/results.php?round_id=<?= $round['id'] ?>"
-           class="uk-button uk-button-default uk-button-small">
-            Risultati<?= $round['results_released'] ? ' 🌍' : '' ?>
-        </a>
-        <a href="/admin/rounds-edit.php?id=<?= $round['id'] ?>&event_id=<?= $eventId ?>"
-           class="uk-button uk-button-default uk-button-small"><?= __('edit') ?></a>
+        <?php endif ?>
 
+        <!-- Secondary actions -->
+        <?php if ($round['status'] !== 'closed'): ?>
+        <a href="/admin/results.php?round_id=<?= $round['id'] ?>"
+           class="uk-button uk-button-default uk-button-small">Risultati</a>
+        <?php elseif ($round['status'] !== 'active'): ?>
+        <a href="/admin/candidates.php?round_id=<?= $round['id'] ?>"
+           class="uk-button uk-button-default uk-button-small">Candidati</a>
+        <?php endif ?>
+        <a href="/admin/rounds-edit.php?id=<?= $round['id'] ?>&event_id=<?= $eventId ?>"
+           class="uk-button uk-button-default uk-button-small">
+            <span uk-icon="icon:pencil;ratio:.75"></span> Modifica
+        </a>
+
+        <!-- Lifecycle action -->
         <?php if (in_array($round['status'], ['draft','active'], true)): ?>
         <form method="post" style="display:inline;margin:0">
             <?= Csrf::field() ?>
@@ -310,21 +323,22 @@ ob_start();
             </button>
             <?php else: ?>
             <input type="hidden" name="_action" value="close">
-            <button class="uk-button uk-button-small"
-                    style="background:#e74c3c;color:#fff;border-color:#e74c3c">
+            <button class="uk-button uk-button-small e-btn-danger">
                 <span uk-icon="icon:ban;ratio:.75"></span> Chiudi
             </button>
             <?php endif ?>
         </form>
         <?php endif ?>
 
+        <!-- Destructive action (icon only, far right) -->
         <form method="post" style="display:inline;margin:0 0 0 auto">
             <?= Csrf::field() ?>
             <input type="hidden" name="_action" value="delete">
             <input type="hidden" name="round_id" value="<?= $round['id'] ?>">
-            <button class="uk-button uk-button-link uk-button-small" style="color:#ddd"
+            <button class="uk-button uk-button-link uk-button-small" style="color:#ddd;padding:0 6px"
+                    title="<?= htmlspecialchars(__('confirm_delete')) ?>"
                     data-confirm="<?= htmlspecialchars(__('confirm_delete')) ?>">
-                <?= __('delete') ?>
+                <span uk-icon="icon:trash;ratio:.8"></span>
             </button>
         </form>
     </div>
@@ -348,6 +362,17 @@ ob_start();
         <span uk-icon="plus-circle"></span> Aggiungi fase
     </a>
 </div>
+
+<script>
+function toggleCats(uid, btn) {
+    var wrap = document.getElementById('cats-' + uid);
+    var hidden = wrap.querySelectorAll('.e-cat-hidden');
+    var expanded = wrap.classList.toggle('e-cats-expanded');
+    hidden.forEach(function(el) { el.style.display = expanded ? 'flex' : 'none'; });
+    var n = hidden.length;
+    btn.textContent = expanded ? 'Mostra meno' : '+' + n + ' altre';
+}
+</script>
 
 </div><!-- /e-pipeline -->
 <?php endif ?>
