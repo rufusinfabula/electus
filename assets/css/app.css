@@ -289,33 +289,27 @@
     border-top: 1px solid #ece9f5;
 }
 
-.e-nav-event-title > a {
-    display: block;
+.e-nav .e-nav-event-title > a {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 6px;
     font-size: .78rem;
     font-weight: 700;
     color: var(--e-primary);
     line-height: 1.4;
     white-space: normal;
     text-decoration: none;
+    padding: 6px 12px 4px;
 }
 
-.e-nav-event-title > a:hover {
+.e-nav .e-nav-event-title > a:hover {
     text-decoration: underline;
+    background: transparent;
 }
 
-/* Small section label ("Turni") */
-.e-nav-section-header {
-    padding: 10px 12px 2px;
-    font-size: .67rem;
-    font-weight: 600;
-    letter-spacing: .08em;
-    text-transform: uppercase;
-    color: #c8c3e0;
-    list-style: none;
-}
-
-/* Round accordion toggle */
-.e-nav > li.e-nav-round-item > a {
+/* Round accordion toggle — higher specificity to override level-1 sub-item rule */
+.e-nav .uk-nav-sub > li.e-nav-round-item > a {
     padding: 6px 12px;
     font-size: .82rem;
     display: flex;
@@ -357,24 +351,36 @@
     display: block;
 }
 
+/* Level 1: overview, categories, voters (and round toggles — overridden below) */
 .e-nav .uk-nav-sub > li > a {
     display: flex;
     align-items: center;
     gap: 7px;
-    padding: 5px 12px 5px 26px;
+    padding: 5px 12px 5px 14px;
     font-size: .8rem;
     color: #6b6494;
     border-radius: 6px;
     transition: background .15s, color .15s;
 }
 
+/* Level 2: candidates, results (inside round sub-menu) */
+.e-nav .uk-nav-sub .uk-nav-sub > li > a {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 5px 12px 5px 30px;
+}
+
 .e-nav .uk-nav-sub > li > a:hover,
-.e-nav .uk-nav-sub > li.uk-active > a {
+.e-nav .uk-nav-sub > li.uk-active > a,
+.e-nav .uk-nav-sub .uk-nav-sub > li > a:hover,
+.e-nav .uk-nav-sub .uk-nav-sub > li.uk-active > a {
     background: var(--e-bg);
     color: var(--e-primary);
 }
 
-.e-nav .uk-nav-sub > li.uk-active > a {
+.e-nav .uk-nav-sub > li.uk-active > a,
+.e-nav .uk-nav-sub .uk-nav-sub > li.uk-active > a {
     font-weight: 600;
 }
 

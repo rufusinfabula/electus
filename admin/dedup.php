@@ -42,23 +42,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($sourceId && $targetId) {
             try {
                 Deduplication::merge($queueId, $sourceId, $targetId, $user['id'], $canonical);
-                Flash::success('Candidates merged. Alias saved.');
+                Flash::success(__('candidates_merged_alias'));
             } catch (\Throwable $e) {
-                Flash::error('Merge failed: ' . $e->getMessage());
+                Flash::error(__('error_prefix') . $e->getMessage());
             }
         }
     }
 
     if ($action === 'keep' && $queueId) {
         Deduplication::keep($queueId, $user['id']);
-        Flash::success('Candidate kept as separate entry.');
+        Flash::success(__('candidate_kept_separate'));
     }
 
     if ($action === 'exclude' && $queueId) {
         $candidateId = (int) ($_POST['candidate_id'] ?? 0);
         if ($candidateId) {
             Deduplication::exclude($queueId, $candidateId, $user['id']);
-            Flash::success('Candidate excluded.');
+            Flash::success(__('candidate_excluded'));
         }
     }
 
@@ -66,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $aliasId = (int) ($_POST['alias_id'] ?? 0);
         if ($aliasId) {
             Deduplication::deleteAlias($aliasId);
-            Flash::success('Alias deleted.');
+            Flash::success(__('alias_deleted'));
         }
     }
 
@@ -105,9 +105,9 @@ ob_start();
         </div>
     </div>
     <div style="text-align:right;font-size:.85rem;color:#9a94b8">
-        <strong style="color:var(--e-primary)"><?= count($queue) ?></strong> pending
+        <strong style="color:var(--e-primary)"><?= count($queue) ?></strong> <?= __('pending_review_label') ?>
         &nbsp;·&nbsp;
-        <strong style="color:#27ae60"><?= $reviewedCount ?></strong> reviewed
+        <strong style="color:#27ae60"><?= $reviewedCount ?></strong> <?= __('reviewed_label') ?>
     </div>
 </div>
 
@@ -115,7 +115,7 @@ ob_start();
 <ul class="uk-tab uk-margin-bottom" uk-tab>
     <li class="<?= $tab === 'queue' ? 'uk-active' : '' ?>">
         <a href="/admin/dedup.php?round_id=<?= $roundId ?>&tab=queue">
-            Queue
+            <?= __('dedup_tab') ?>
             <?php if (count($queue) > 0): ?>
             <span class="uk-badge" style="background:var(--e-primary)"><?= count($queue) ?></span>
             <?php endif ?>
@@ -123,7 +123,7 @@ ob_start();
     </li>
     <li class="<?= $tab === 'aliases' ? 'uk-active' : '' ?>">
         <a href="/admin/dedup.php?round_id=<?= $roundId ?>&tab=aliases">
-            Alias dictionary
+            <?= __('alias_dict_title') ?>
             <span class="uk-badge" style="background:#9a94b8"><?= count($aliases) ?></span>
         </a>
     </li>
@@ -163,10 +163,10 @@ foreach ($queue as $item):
 
             <!-- Left: the duplicate entry -->
             <div class="uk-width-1-3@m">
-                <p style="font-size:.7rem;text-transform:uppercase;letter-spacing:.07em;color:#9a94b8;margin:0 0 4px">New entry</p>
+                <p style="font-size:.7rem;text-transform:uppercase;letter-spacing:.07em;color:#9a94b8;margin:0 0 4px"><?= __('dedup_raw') ?></p>
                 <p style="font-size:1rem;font-weight:700;margin:0 0 2px"><?= htmlspecialchars($item['new_cand_name'] ?? $item['raw_input']) ?></p>
                 <p style="font-size:.8rem;color:#9a94b8;margin:0">
-                    Normalized: <code><?= htmlspecialchars($item['normalized_input']) ?></code>
+                    <?= __('normalized_label') ?>: <code><?= htmlspecialchars($item['normalized_input']) ?></code>
                 </p>
             </div>
 
@@ -190,7 +190,7 @@ foreach ($queue as $item):
                     <?= htmlspecialchars($item['suggested_name']) ?>
                 </p>
                 <?php else: ?>
-                <p style="color:#9a94b8;margin:0 0 12px;font-size:.875rem">No suggestion</p>
+                <p style="color:#9a94b8;margin:0 0 12px;font-size:.875rem"><?= __('no_suggestion') ?></p>
                 <?php endif ?>
 
                 <!-- Merge form -->
@@ -238,7 +238,7 @@ foreach ($queue as $item):
                     <input type="hidden" name="queue_id" value="<?= $item['id'] ?>">
                     <input type="hidden" name="candidate_id" value="<?= $item['new_cand_id'] ?>">
                     <button class="uk-button uk-button-link uk-button-small"
-                            data-confirm="Exclude this candidate from results?"
+                            data-confirm="<?= htmlspecialchars(__('exclude_candidate_confirm')) ?>"
                             style="color:#e74c3c">
                         <?= __('dedup_exclude') ?>
                     </button>
@@ -270,10 +270,10 @@ foreach ($queue as $item):
     <table class="uk-table uk-table-hover uk-table-divider uk-margin-remove">
         <thead>
             <tr>
-                <th>Category</th>
-                <th><?= __('dedup_raw') ?> (normalized alias)</th>
-                <th>→ Canonical name</th>
-                <th>Created by</th>
+                <th><?= __('categories_title') ?></th>
+                <th><?= __('alias_normalized_col') ?></th>
+                <th><?= __('canonical_name_col') ?></th>
+                <th><?= __('created_by_col') ?></th>
                 <th style="width:60px"></th>
             </tr>
         </thead>
@@ -290,7 +290,7 @@ foreach ($queue as $item):
                         <input type="hidden" name="_action" value="delete_alias">
                         <input type="hidden" name="alias_id" value="<?= $alias['id'] ?>">
                         <button uk-icon="icon:trash;ratio:.8"
-                                data-confirm="Delete this alias?"
+                                data-confirm="<?= htmlspecialchars(__('alias_delete_confirm')) ?>"
                                 style="color:#e74c3c;background:none;border:none;cursor:pointer;padding:0"
                                 class="uk-icon-link"></button>
                     </form>

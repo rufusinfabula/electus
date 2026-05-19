@@ -19,20 +19,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!isset(Theme::PALETTES[$preset])) $preset = Theme::DEFAULT_PRESET;
     Settings::set('admin_theme', $preset);
 
-    Flash::success('Tema admin aggiornato.');
+    Flash::success(__('settings_saved'));
     header('Location: /admin/settings.php');
     exit;
 }
 
 $currentPreset = Settings::get('admin_theme', Theme::DEFAULT_PRESET);
 
-$pageTitle  = 'Impostazioni sistema';
+$pageTitle  = __('settings_title');
 $activeMenu = 'settings';
 
 ob_start();
 ?>
 
-<h1 class="e-page-title">Impostazioni sistema</h1>
+<h1 class="e-page-title"><?= __('settings_title') ?></h1>
 
 <div class="e-card">
     <form method="post" id="theme-form">
@@ -41,13 +41,13 @@ ob_start();
 
         <div class="uk-flex uk-flex-middle uk-flex-between" style="margin-bottom:20px">
             <div>
-                <h3 style="font-size:1rem;font-weight:700;margin:0 0 2px">Tema pannello admin</h3>
+                <h3 style="font-size:1rem;font-weight:700;margin:0 0 2px"><?= __('settings_admin_theme') ?></h3>
                 <p style="font-size:.82rem;color:#9a94b8;margin:0">
-                    Seleziona la palette di colori per tutte le pagine del pannello di amministrazione.
+                    <?= __('settings_admin_theme_desc') ?>
                 </p>
             </div>
             <button type="submit" class="uk-button uk-button-primary" style="flex-shrink:0">
-                <span uk-icon="icon:check;ratio:.85"></span> Salva tema
+                <span uk-icon="icon:check;ratio:.85"></span> <?= __('save') ?>
             </button>
         </div>
 
@@ -100,7 +100,7 @@ ob_start();
                     <?= htmlspecialchars($pal['label']) ?>
                 </div>
                 <?php if ($pal['dark']): ?>
-                <div style="font-size:.68rem;color:#9a94b8;margin-top:2px">Tema scuro</div>
+                <div style="font-size:.68rem;color:#9a94b8;margin-top:2px"><?= __('settings_dark_theme') ?></div>
                 <?php endif ?>
             </div>
         </div>

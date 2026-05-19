@@ -56,7 +56,7 @@
 
     <!-- Sidebar -->
     <div class="e-sidebar">
-        <ul class="uk-nav uk-nav-default e-nav" uk-nav>
+        <ul class="uk-nav uk-nav-default e-nav" uk-nav="multiple: true; targets: .uk-parent">
             <li class="uk-nav-header">Menu</li>
 
             <li <?= ($activeMenu ?? '') === 'dashboard' ? 'class="uk-active"' : '' ?>>
@@ -99,63 +99,65 @@
                 $__activeMenu = $activeMenu ?? '';
             ?>
 
-            <!-- Event name (plain li, not uk-nav-header to avoid forced uppercase) -->
-            <li class="e-nav-event-title">
-                <a href="/admin/rounds.php?event_id=<?= $currentEventId ?>">
-                    <?= htmlspecialchars($currentEventName) ?>
-                </a>
-            </li>
-
-            <!-- Event-level items -->
-            <li class="<?= $__activeMenu === 'rounds' ? 'uk-active' : '' ?>">
-                <a href="/admin/rounds.php?event_id=<?= $currentEventId ?>">
-                    <span uk-icon="icon:grid;ratio:.85"></span> Panoramica
-                </a>
-            </li>
-            <li class="<?= $__activeMenu === 'categories' ? 'uk-active' : '' ?>">
-                <a href="/admin/categories.php?event_id=<?= $currentEventId ?>">
-                    <span uk-icon="icon:tag;ratio:.85"></span> <?= $__catTermP ?>
-                </a>
-            </li>
-            <li class="<?= $__activeMenu === 'voters' ? 'uk-active' : '' ?>">
-                <a href="/admin/voters.php?event_id=<?= $currentEventId ?>">
-                    <span uk-icon="icon:users;ratio:.85"></span> <?= __('voters_title') ?>
-                </a>
-            </li>
-
-            <?php if (!empty($__rounds)): ?>
-            <li class="e-nav-section-header">Turni</li>
-            <?php foreach ($__rounds as $__r):
-                $__rOpen = ($__sidebarRoundId === (int) $__r['id']);
-                $__candActive = $__activeMenu === 'candidates' && $__rOpen;
-                $__resActive  = $__activeMenu === 'results'    && $__rOpen;
-                $__statusDot  = ['active' => '#27ae60', 'closed' => '#9a94b8', 'draft' => '#c8c3e0'][$__r['status']] ?? '#c8c3e0';
-            ?>
-            <li class="uk-parent <?= $__rOpen ? 'uk-open' : '' ?> e-nav-round-item">
-                <a href="#">
-                    <span class="e-nav-round-dot" style="background:<?= $__statusDot ?>"></span>
-                    <span class="e-nav-round-label">
-                        <?= __('round_number') ?><?= $__r['round_number'] ?>
-                        <?php if ($__r['label']): ?>
-                        <span class="e-nav-round-sub"><?= htmlspecialchars($__r['label']) ?></span>
-                        <?php endif ?>
-                    </span>
-                </a>
+            <!-- Event block: collapsible accordion tree -->
+            <li class="uk-parent uk-open e-nav-event-title">
+                <a href="#"><?= htmlspecialchars($currentEventName) ?></a>
                 <ul class="uk-nav-sub">
-                    <li <?= $__candActive ? 'class="uk-active"' : '' ?>>
-                        <a href="/admin/candidates.php?round_id=<?= $__r['id'] ?>">
-                            <span uk-icon="icon:list;ratio:.8"></span> Candidati
+
+                    <li class="<?= $__activeMenu === 'rounds' ? 'uk-active' : '' ?>">
+                        <a href="/admin/rounds.php?event_id=<?= $currentEventId ?>">
+                            <span uk-icon="icon:grid;ratio:.8"></span> <?= __('nav_overview') ?>
                         </a>
                     </li>
-                    <li <?= $__resActive ? 'class="uk-active"' : '' ?>>
-                        <a href="/admin/results.php?round_id=<?= $__r['id'] ?>">
-                            <span uk-icon="icon:bar-chart;ratio:.8"></span> Risultati
+                    <li class="<?= $__activeMenu === 'categories' ? 'uk-active' : '' ?>">
+                        <a href="/admin/categories.php?event_id=<?= $currentEventId ?>">
+                            <span uk-icon="icon:tag;ratio:.8"></span> <?= $__catTermP ?>
                         </a>
                     </li>
+                    <li class="<?= $__activeMenu === 'voters' ? 'uk-active' : '' ?>">
+                        <a href="/admin/voters.php?event_id=<?= $currentEventId ?>">
+                            <span uk-icon="icon:users;ratio:.8"></span> <?= __('voters_title') ?>
+                        </a>
+                    </li>
+
+                    <?php foreach ($__rounds as $__r):
+                        $__rOpen      = ($__sidebarRoundId === (int) $__r['id']);
+                        $__candActive = $__activeMenu === 'candidates' && $__rOpen;
+                        $__resActive  = $__activeMenu === 'results'    && $__rOpen;
+                        $__dotStyle   = match($__r['status']) {
+                            'active'  => 'background:#27ae60',
+                            'closed'  => 'background:#9a94b8',
+                            default   => 'background:transparent;border:2px solid #c8c3e0;box-sizing:border-box',
+                        };
+                    ?>
+                    <li class="uk-parent <?= $__rOpen ? 'uk-open' : '' ?> e-nav-round-item">
+                        <a href="#">
+                            <span class="e-nav-round-dot" style="<?= $__dotStyle ?>"
+                                  title="<?= htmlspecialchars(__('event_status_' . $__r['status'])) ?>"></span>
+                            <span class="e-nav-round-label">
+                                <?= __('round_number') ?><?= $__r['round_number'] ?>
+                                <?php if ($__r['label']): ?>
+                                <span class="e-nav-round-sub"><?= htmlspecialchars($__r['label']) ?></span>
+                                <?php endif ?>
+                            </span>
+                        </a>
+                        <ul class="uk-nav-sub">
+                            <li <?= $__candActive ? 'class="uk-active"' : '' ?>>
+                                <a href="/admin/candidates.php?round_id=<?= $__r['id'] ?>">
+                                    <span uk-icon="icon:list;ratio:.8"></span> <?= __('candidates_title') ?>
+                                </a>
+                            </li>
+                            <li <?= $__resActive ? 'class="uk-active"' : '' ?>>
+                                <a href="/admin/results.php?round_id=<?= $__r['id'] ?>">
+                                    <span uk-icon="icon:thumbnails;ratio:.8"></span> <?= __('results_title') ?>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    <?php endforeach ?>
+
                 </ul>
             </li>
-            <?php endforeach ?>
-            <?php endif ?>
 
             <?php endif ?>
 
@@ -166,7 +168,7 @@
                 <a href="/admin/users.php"><span uk-icon="icon:users;ratio:.85"></span> <?= __('users_title') ?></a>
             </li>
             <li <?= ($activeMenu ?? '') === 'settings' ? 'class="uk-active"' : '' ?>>
-                <a href="/admin/settings.php"><span uk-icon="icon:paint-bucket;ratio:.85"></span> Tema admin</a>
+                <a href="/admin/settings.php"><span uk-icon="icon:paint-bucket;ratio:.85"></span> <?= __('nav_admin_theme') ?></a>
             </li>
             <?php endif ?>
         </ul>

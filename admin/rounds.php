@@ -28,9 +28,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($roundId && in_array($action, ['activate','close','delete'], true)) {
         match ($action) {
-            'activate' => (function () use ($roundId) { Round::setStatus($roundId, 'active');  Flash::success('Turno attivato.'); })(),
-            'close'    => (function () use ($roundId) { Round::setStatus($roundId, 'closed');  Flash::success('Turno chiuso.'); })(),
-            'delete'   => (function () use ($roundId) { Round::delete($roundId); Flash::success('Turno eliminato.'); })(),
+            'activate' => (function () use ($roundId) { Round::setStatus($roundId, 'active');  Flash::success(__('round_activated')); })(),
+            'close'    => (function () use ($roundId) { Round::setStatus($roundId, 'closed');  Flash::success(__('round_closed_msg')); })(),
+            'delete'   => (function () use ($roundId) { Round::delete($roundId); Flash::success(__('round_deleted')); })(),
         };
     }
 
@@ -43,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             Database::get()->prepare(
                 'UPDATE round_category_map SET advancement_mode=?, advancement_count=? WHERE round_id=? AND category_id=?'
             )->execute([$mode, $count, $roundId, $catId]);
-            Flash::success('Avanzamento aggiornato.');
+            Flash::success(__('advancement_updated'));
         }
     }
 
@@ -121,7 +121,7 @@ ob_start();
     <div class="uk-flex" style="gap:8px">
         <a href="/admin/events-edit.php?id=<?= $eventId ?>"
            class="uk-button uk-button-default uk-button-small">
-            <span uk-icon="icon:settings;ratio:.85"></span> Impostazioni
+            <span uk-icon="icon:settings;ratio:.85"></span> <?= __('event_settings_btn') ?>
         </a>
         <a href="/admin/rounds-edit.php?event_id=<?= $eventId ?>"
            class="uk-button uk-button-primary uk-button-small">
@@ -153,7 +153,7 @@ ob_start();
     <div class="uk-width-auto">
         <div class="e-stat" style="min-width:110px">
             <div class="e-stat-value" style="color:var(--e-primary)"><?= $totalVotes ?></div>
-            <div class="e-stat-label">Voti totali</div>
+            <div class="e-stat-label"><?= __('total_votes') ?></div>
         </div>
     </div>
 </div>
@@ -163,21 +163,21 @@ ob_start();
 <div class="e-publink-strip<?= $isLive ? ' e-publink-live' : '' ?> uk-margin-bottom">
     <?php if ($isLive): ?>
     <span class="e-publink-dot"></span>
-    <span style="font-size:.72rem;font-weight:700;color:#1a7a3c;white-space:nowrap">VOTO APERTO</span>
+    <span style="font-size:.72rem;font-weight:700;color:#1a7a3c;white-space:nowrap"><?= __('voting_open') ?></span>
     <?php else: ?>
     <span uk-icon="icon:link;ratio:.8" style="color:#9a94b8;flex-shrink:0"></span>
     <?php endif ?>
     <code class="e-publink-url"><?= htmlspecialchars($voteUrl) ?></code>
     <?php if (!$isLive): ?>
-    <span style="font-size:.72rem;color:#e67e22;white-space:nowrap">Attiva la votazione per abilitare</span>
+    <span style="font-size:.72rem;color:#e67e22;white-space:nowrap"><?= __('activate_to_enable') ?></span>
     <?php endif ?>
     <div style="display:flex;gap:6px;flex-shrink:0;margin-left:auto">
-        <button onclick="navigator.clipboard.writeText('<?= htmlspecialchars($voteUrl, ENT_QUOTES) ?>');this.innerHTML='&#10003; Copiato';setTimeout(()=>this.innerHTML='<span uk-icon=\'icon:copy;ratio:.75\'></span> Copia',1800)"
+        <button onclick="navigator.clipboard.writeText('<?= htmlspecialchars($voteUrl, ENT_QUOTES) ?>');this.innerHTML='&#10003; <?= __('copied_btn') ?>';setTimeout(()=>this.innerHTML='<span uk-icon=\'icon:copy;ratio:.75\'></span> <?= __('copy_btn') ?>',1800)"
                 class="uk-button uk-button-default uk-button-small">
-            <span uk-icon="icon:copy;ratio:.75"></span> Copia
+            <span uk-icon="icon:copy;ratio:.75"></span> <?= __('copy_btn') ?>
         </button>
         <a href="<?= htmlspecialchars($voteUrl) ?>" target="_blank"
-           class="uk-button uk-button-default uk-button-small" title="Apri in nuova scheda">
+           class="uk-button uk-button-default uk-button-small" title="<?= __('open_newtab') ?>">
             <span uk-icon="icon:forward;ratio:.75"></span>
         </a>
     </div>
@@ -187,10 +187,9 @@ ob_start();
 <div class="uk-alert-warning" uk-alert style="margin-bottom:20px">
     <p>
         <span uk-icon="warning"></span>
-        <strong><?= $pendingDedup ?> candidature</strong> in attesa di revisione.
-        Revisionarle prima di calcolare i risultati.
+        <?= str_replace(':count', (string)$pendingDedup, __('pending_dedup_alert')) ?>
         <a href="/admin/results.php?round_id=<?= $rounds[0]['id'] ?? 0 ?>&tab=review" style="font-weight:600">
-            Vai alla revisione &rarr;
+            &rarr;
         </a>
     </p>
 </div>
@@ -200,7 +199,7 @@ ob_start();
 <?php if (empty($rounds)): ?>
 <div class="e-card uk-text-center" style="padding:60px">
     <span uk-icon="icon:list;ratio:2" style="color:#c8c3e0"></span>
-    <p style="color:#9a94b8;margin-top:12px">Nessuna fase ancora. Crea la prima fase di voto.</p>
+    <p style="color:#9a94b8;margin-top:12px"><?= __('no_rounds_yet') ?></p>
     <a href="/admin/rounds-edit.php?event_id=<?= $eventId ?>" class="uk-button uk-button-primary uk-margin-top">
         <span uk-icon="plus-circle"></span> <?= __('round_new') ?>
     </a>
@@ -217,7 +216,13 @@ ob_start();
 
     $roundCats  = Round::categoriesFor((int) $round['id']);
     $isLast     = $i === count($rounds) - 1;
-    $stepLabels = ['Bozza', 'In corso', 'Chiuso', 'Validato', 'Pubblicato'];
+    $stepLabels = [
+        __('event_status_draft'),
+        __('step_in_progress'),
+        __('event_status_closed'),
+        __('step_validated'),
+        __('step_published'),
+    ];
 
     // Date-vs-status warning
     $now      = time();
@@ -244,7 +249,7 @@ ob_start();
             <div>
                 <div class="uk-flex uk-flex-middle" style="gap:6px;flex-wrap:wrap">
                     <h3 style="margin:0;font-size:.95rem;font-weight:700;color:var(--e-text)">
-                        <?= $round['label'] ? htmlspecialchars($round['label']) : 'Fase ' . $round['round_number'] ?>
+                        <?= $round['label'] ? htmlspecialchars($round['label']) : __('round_number') . $round['round_number'] ?>
                     </h3>
                     <?php if ($round['status'] === 'active' && $event['status'] === 'active' && $dateWarn === ''): ?>
                     <span style="display:inline-flex;align-items:center;gap:4px;font-size:.68rem;font-weight:700;color:#1a7a3c;background:#e6f9ee;padding:2px 8px;border-radius:20px">
@@ -253,11 +258,11 @@ ob_start();
                     </span>
                     <?php elseif ($dateWarn === 'future'): ?>
                     <span style="display:inline-flex;align-items:center;gap:4px;font-size:.68rem;font-weight:600;color:#a05800;background:#fdf2e3;padding:2px 8px;border-radius:20px">
-                        <span uk-icon="icon:clock;ratio:.7"></span> Apre il <?= date('d/m', $opensTs) ?>
+                        <span uk-icon="icon:clock;ratio:.7"></span> <?= __('opens_on') ?> <?= date('d/m', $opensTs) ?>
                     </span>
                     <?php elseif ($dateWarn === 'expired'): ?>
                     <span style="font-size:.68rem;font-weight:600;color:#c0392b;background:#fde8e8;padding:2px 8px;border-radius:20px">
-                        ⚠ Date scadute
+                        ⚠ <?= __('dates_expired') ?>
                     </span>
                     <?php endif ?>
                 </div>
@@ -276,17 +281,17 @@ ob_start();
         <div class="e-stepper" style="flex-shrink:0">
             <?php if ($displayStep === -1): ?>
             <!-- Scheduled/pending state: shown between Bozza and In corso -->
-            <span class="e-stepper-dot e-step-done" title="Bozza"></span>
+            <span class="e-stepper-dot e-step-done" title="<?= __('event_status_draft') ?>"></span>
             <span class="e-stepper-sep"></span>
-            <span class="e-stepper-dot e-step-pending" title="In attesa">
-                <span class="e-stepper-label e-stepper-label-pending">In attesa</span>
+            <span class="e-stepper-dot e-step-pending" title="<?= __('step_pending') ?>">
+                <span class="e-stepper-label e-stepper-label-pending"><?= __('step_pending') ?></span>
             </span>
             <span class="e-stepper-sep"></span>
-            <span class="e-stepper-dot e-step-future" title="In corso"></span>
+            <span class="e-stepper-dot e-step-future" title="<?= __('step_in_progress') ?>"></span>
             <span class="e-stepper-sep"></span>
-            <span class="e-stepper-dot e-step-future" title="Chiuso"></span>
+            <span class="e-stepper-dot e-step-future" title="<?= __('event_status_closed') ?>"></span>
             <span class="e-stepper-sep"></span>
-            <span class="e-stepper-dot e-step-future" title="Validato"></span>
+            <span class="e-stepper-dot e-step-future" title="<?= __('step_validated') ?>"></span>
             <?php else: ?>
             <?php foreach ($stepLabels as $s => $lbl):
                 $done    = $displayStep > $s;
@@ -309,10 +314,10 @@ ob_start();
             $mode     = $cat['advancement_mode'] ?? 'manual';
             $cnt      = $cat['advancement_count'] ?? null;
             $advDesc  = match($mode) {
-                'auto'   => 'Top ' . ($cnt ?? '?') . ' avanzano automaticamente al turno successivo.',
-                'all'    => 'Tutti i candidati avanzano al turno successivo.',
-                'none'   => 'Nessun candidato avanza al turno successivo.',
-                default  => 'L\'avanzamento viene scelto manualmente dall\'admin.',
+                'auto'   => str_replace(':n', (string)($cnt ?? '?'), __('advancement_desc_auto')),
+                'all'    => __('advancement_desc_all'),
+                'none'   => __('advancement_desc_none'),
+                default  => __('advancement_desc_manual'),
             };
             $dc  = $dotColor[$mode] ?? '#bbb';
             $pid = 'pop-' . $round['id'] . '-' . $cat['id'];
@@ -322,7 +327,7 @@ ob_start();
             <span class="e-cat-chip-name"><?= htmlspecialchars($cat['name']) ?></span>
             <!-- Popover trigger -->
             <div class="uk-inline" style="margin-left:auto;flex-shrink:0">
-                <button type="button" class="e-cat-pop-btn" title="Impostazioni avanzamento">⋯</button>
+                <button type="button" class="e-cat-pop-btn" title="<?= __('advancement_settings') ?>">⋯</button>
                 <div uk-drop="mode:click;pos:bottom-right;offset:6;boundary:.e-pipeline-block"
                      class="e-cat-popover uk-drop">
                     <div class="e-cat-pop-inner">
@@ -334,26 +339,31 @@ ob_start();
                             <input type="hidden" name="_action"     value="update_cat_adv">
                             <input type="hidden" name="round_id"   value="<?= $round['id'] ?>">
                             <input type="hidden" name="category_id" value="<?= $cat['id'] ?>">
-                            <label style="font-size:.72rem;font-weight:600;color:#6b6494;display:block;margin-bottom:4px">Avanzamento al turno successivo</label>
+                            <label style="font-size:.72rem;font-weight:600;color:#6b6494;display:block;margin-bottom:4px"><?= __('advancement_next_round') ?></label>
                             <select name="advancement_mode" class="uk-select uk-form-small"
                                     onchange="this.nextElementSibling.style.display=this.value==='auto'?'flex':'none'">
-                                <?php foreach (['auto'=>'Top N avanzano','all'=>'Tutti avanzano','none'=>'Nessuno avanza','manual'=>'Manuale'] as $mv => $ml): ?>
+                                <?php foreach ([
+                                    'auto'   => __('advancement_top_n'),
+                                    'all'    => __('advancement_all'),
+                                    'none'   => __('advancement_none'),
+                                    'manual' => __('advancement_manual'),
+                                ] as $mv => $ml): ?>
                                 <option value="<?= $mv ?>" <?= $mode === $mv ? 'selected' : '' ?>><?= $ml ?></option>
                                 <?php endforeach ?>
                             </select>
                             <div style="display:<?= $mode === 'auto' ? 'flex' : 'none' ?>;align-items:center;gap:6px;margin-top:6px">
-                                <label style="font-size:.72rem;color:#6b6494;white-space:nowrap">Top</label>
+                                <label style="font-size:.72rem;color:#6b6494;white-space:nowrap"><?= __('top_label') ?></label>
                                 <input type="number" name="advancement_count"
                                        value="<?= htmlspecialchars((string)($cnt ?? '')) ?>"
                                        min="1" class="uk-input uk-form-small" style="width:60px">
-                                <label style="font-size:.72rem;color:#6b6494;white-space:nowrap">candidati</label>
+                                <label style="font-size:.72rem;color:#6b6494;white-space:nowrap"><?= __('candidates_lc') ?></label>
                             </div>
                             <button type="submit" class="uk-button uk-button-primary uk-button-small" style="margin-top:8px;width:100%">
-                                Salva
+                                <?= __('save') ?>
                             </button>
                         </form>
                         <?php else: ?>
-                        <p style="font-size:.75rem;color:#9a94b8;margin:8px 0 0;font-style:italic">Ultimo turno — nessun avanzamento.</p>
+                        <p style="font-size:.75rem;color:#9a94b8;margin:8px 0 0;font-style:italic"><?= __('last_round_note') ?></p>
                         <?php endif ?>
                     </div>
                 </div>
@@ -369,29 +379,29 @@ ob_start();
         <?php if ($round['status'] === 'active'): ?>
         <a href="/admin/candidates.php?round_id=<?= $round['id'] ?>"
            class="uk-button uk-button-primary uk-button-small">
-            <span uk-icon="icon:list;ratio:.75"></span> Candidati
+            <span uk-icon="icon:list;ratio:.75"></span> <?= __('candidates_title') ?>
         </a>
         <?php elseif ($round['status'] === 'closed'): ?>
         <a href="/admin/results.php?round_id=<?= $round['id'] ?>"
            class="uk-button uk-button-primary uk-button-small">
-            <span uk-icon="icon:bar-chart;ratio:.75"></span> Risultati<?= $round['results_released'] ? ' ✓' : '' ?>
+            <span uk-icon="icon:bar-chart;ratio:.75"></span> <?= __('results_title') ?><?= $round['results_released'] ? ' ✓' : '' ?>
         </a>
         <?php else: ?>
         <a href="/admin/candidates.php?round_id=<?= $round['id'] ?>"
-           class="uk-button uk-button-default uk-button-small">Candidati</a>
+           class="uk-button uk-button-default uk-button-small"><?= __('candidates_title') ?></a>
         <?php endif ?>
 
         <!-- Secondary actions -->
         <?php if ($round['status'] !== 'closed'): ?>
         <a href="/admin/results.php?round_id=<?= $round['id'] ?>"
-           class="uk-button uk-button-default uk-button-small">Risultati</a>
+           class="uk-button uk-button-default uk-button-small"><?= __('results_title') ?></a>
         <?php elseif ($round['status'] !== 'active'): ?>
         <a href="/admin/candidates.php?round_id=<?= $round['id'] ?>"
-           class="uk-button uk-button-default uk-button-small">Candidati</a>
+           class="uk-button uk-button-default uk-button-small"><?= __('candidates_title') ?></a>
         <?php endif ?>
         <a href="/admin/rounds-edit.php?id=<?= $round['id'] ?>&event_id=<?= $eventId ?>"
            class="uk-button uk-button-default uk-button-small">
-            <span uk-icon="icon:pencil;ratio:.75"></span> Modifica
+            <span uk-icon="icon:pencil;ratio:.75"></span> <?= __('edit') ?>
         </a>
 
         <!-- Lifecycle action -->
@@ -402,12 +412,12 @@ ob_start();
             <?php if ($round['status'] === 'draft'): ?>
             <input type="hidden" name="_action" value="activate">
             <button class="uk-button uk-button-primary uk-button-small">
-                <span uk-icon="icon:play;ratio:.75"></span> Attiva
+                <span uk-icon="icon:play;ratio:.75"></span> <?= __('round_activate') ?>
             </button>
             <?php else: ?>
             <input type="hidden" name="_action" value="close">
             <button class="uk-button uk-button-small e-btn-danger">
-                <span uk-icon="icon:ban;ratio:.75"></span> Chiudi
+                <span uk-icon="icon:ban;ratio:.75"></span> <?= __('round_close_btn') ?>
             </button>
             <?php endif ?>
         </form>
@@ -442,7 +452,7 @@ ob_start();
 <div class="e-pipeline-add">
     <a href="/admin/rounds-edit.php?event_id=<?= $eventId ?><?= !empty($rounds) ? '&parent_round_id=' . end($rounds)['id'] : '' ?>"
        class="uk-button uk-button-primary uk-button-small">
-        <span uk-icon="plus-circle"></span> Aggiungi fase
+        <span uk-icon="plus-circle"></span> <?= __('add_round') ?>
     </a>
 </div>
 

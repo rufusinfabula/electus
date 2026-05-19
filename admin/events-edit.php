@@ -301,10 +301,10 @@ ob_start();
         <div class="uk-grid-medium" uk-grid>
             <div class="uk-width-1-1">
                 <label class="uk-form-label" style="font-weight:700;font-size:.85rem">
-                    Come si chiamano le scelte di voto?
+                    <?= __('cat_term_label') ?>
                 </label>
                 <p style="font-size:.78rem;color:#9a94b8;margin:2px 0 12px">
-                    Termine usato nell'admin per identificare i gruppi di candidati (es. Cariche per una votazione sindacale, Premi per un concorso&hellip;).
+                    <?= __('cat_term_desc') ?>
                 </p>
                 <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:520px">
                 <?php foreach (CatTerm::PRESETS as $ctKey => $ctPal):
@@ -317,7 +317,8 @@ ob_start();
                     <input type="radio" name="cat_term" value="<?= $ctKey ?>"
                            class="uk-radio" <?= $ctSel ? 'checked' : '' ?>>
                     <span style="font-size:.8rem;font-weight:600;color:var(--e-text)">
-                        <?= htmlspecialchars($ctPal['it']['s']) ?> / <?= htmlspecialchars($ctPal['it']['p']) ?>
+                        <?php $ctL = $ctPal[\Electus\Core\Lang::current()] ?? $ctPal['it']; ?>
+                        <?= htmlspecialchars($ctL['s']) ?> / <?= htmlspecialchars($ctL['p']) ?>
                     </span>
                 </label>
                 <?php endforeach ?>

@@ -14,7 +14,7 @@ $eventId = (int) ($_GET['event_id'] ?? 0);
 if (!$eventId) { header('Location: /admin/events.php'); exit; }
 
 $event = Event::find($eventId);
-if (!$event) { Flash::error('Votazione non trovata.'); header('Location: /admin/events.php'); exit; }
+if (!$event) { Flash::error('Event not found.'); header('Location: /admin/events.php'); exit; }
 
 Auth::requireEventPermission($eventId);
 
@@ -30,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($voterId) {
             $pdo->prepare('DELETE FROM voter_lists WHERE id = ? AND event_id = ?')
                 ->execute([$voterId, $eventId]);
-            Flash::success('Elettore rimosso.');
+            Flash::success(__('voter_deleted'));
         }
     }
 
@@ -40,7 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($voterId) {
             $pdo->prepare('UPDATE voter_lists SET approved = ? WHERE id = ? AND event_id = ?')
                 ->execute([$val, $voterId, $eventId]);
-            Flash::success($val ? 'Elettore approvato.' : 'Elettore sospeso.');
+            Flash::success($val ? __('voter_approved') : __('voter_suspended'));
         }
     }
 
@@ -59,7 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $pdo->prepare(
                     "UPDATE voter_registration_requests SET status = 'approved', reviewed_at = NOW(), reviewed_by = ? WHERE id = ?"
                 )->execute([(int) Auth::currentUser()['id'], $reqId]);
-                Flash::success('Richiesta approvata. L\'elettore è stato aggiunto alla lista.');
+                Flash::success(__('voter_request_approved'));
             }
         }
     }
@@ -70,7 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo->prepare(
                 "UPDATE voter_registration_requests SET status = 'rejected', reviewed_at = NOW(), reviewed_by = ? WHERE id = ? AND event_id = ?"
             )->execute([(int) Auth::currentUser()['id'], $reqId, $eventId]);
-            Flash::success('Richiesta rifiutata.');
+            Flash::success(__('voter_request_rejected'));
         }
     }
 
@@ -134,13 +134,13 @@ ob_start();
     <div class="uk-width-auto">
         <div class="e-stat" style="min-width:120px">
             <div class="e-stat-value"><?= $totalVoters ?></div>
-            <div class="e-stat-label">Registrati</div>
+            <div class="e-stat-label"><?= __('stat_registered') ?></div>
         </div>
     </div>
     <div class="uk-width-auto">
         <div class="e-stat" style="min-width:120px">
             <div class="e-stat-value" style="color:var(--e-primary)"><?= $voted ?></div>
-            <div class="e-stat-label">Hanno votato</div>
+            <div class="e-stat-label"><?= __('stat_voted') ?></div>
         </div>
     </div>
     <div class="uk-width-auto">
@@ -148,14 +148,14 @@ ob_start();
             <div class="e-stat-value" style="color:<?= $participation >= 50 ? '#27ae60' : '#e67e22' ?>">
                 <?= $participation ?>%
             </div>
-            <div class="e-stat-label">Partecipazione</div>
+            <div class="e-stat-label"><?= __('participation') ?></div>
         </div>
     </div>
     <?php if ($suspended > 0): ?>
     <div class="uk-width-auto">
         <div class="e-stat" style="min-width:120px">
             <div class="e-stat-value" style="color:#e74c3c"><?= $suspended ?></div>
-            <div class="e-stat-label">Sospesi</div>
+            <div class="e-stat-label"><?= __('stat_suspended') ?></div>
         </div>
     </div>
     <?php endif ?>
@@ -163,7 +163,7 @@ ob_start();
     <div class="uk-width-auto">
         <div class="e-stat" style="min-width:120px">
             <div class="e-stat-value" style="color:#e67e22"><?= $pendingRequests ?></div>
-            <div class="e-stat-label">Richieste in attesa</div>
+            <div class="e-stat-label"><?= __('pending_requests') ?></div>
         </div>
     </div>
     <?php endif ?>
@@ -173,14 +173,14 @@ ob_start();
 <!-- Pending registration requests -->
 <div class="e-card uk-margin-bottom">
     <h3 style="font-size:.9rem;font-weight:700;margin-bottom:12px;color:#e67e22">
-        <span uk-icon="warning"></span> Richieste di registrazione in attesa (<?= $pendingRequests ?>)
+        <span uk-icon="warning"></span> <?= __('pending_registrations_title') ?> (<?= $pendingRequests ?>)
     </h3>
     <table class="uk-table uk-table-small uk-table-divider uk-margin-remove">
         <thead>
             <tr>
-                <th>Nome</th>
-                <th>Email</th>
-                <th>Data richiesta</th>
+                <th><?= __('name') ?></th>
+                <th><?= __('email') ?></th>
+                <th><?= __('request_date') ?></th>
                 <th style="width:140px"></th>
             </tr>
         </thead>
@@ -198,14 +198,14 @@ ob_start();
                             <?= Csrf::field() ?>
                             <input type="hidden" name="_action" value="approve_request">
                             <input type="hidden" name="request_id" value="<?= $req['id'] ?>">
-                            <button class="uk-button uk-button-primary uk-button-small">Approva</button>
+                            <button class="uk-button uk-button-primary uk-button-small"><?= __('approve') ?></button>
                         </form>
                         <form method="post" style="display:inline">
                             <?= Csrf::field() ?>
                             <input type="hidden" name="_action" value="reject_request">
                             <input type="hidden" name="request_id" value="<?= $req['id'] ?>">
                             <button class="uk-button uk-button-small"
-                                    style="background:#e74c3c;color:#fff;border-color:#e74c3c">Rifiuta</button>
+                                    style="background:#e74c3c;color:#fff;border-color:#e74c3c"><?= __('reject') ?></button>
                         </form>
                     </div>
                 </td>
@@ -220,15 +220,11 @@ ob_start();
 <?php if (empty($voters)): ?>
 <div class="e-card uk-text-center" style="padding:60px">
     <span uk-icon="icon:users;ratio:2" style="color:#c8c3e0"></span>
-    <p style="color:#9a94b8;margin-top:12px">Nessun elettore registrato.</p>
+    <p style="color:#9a94b8;margin-top:12px"><?= __('no_voters_yet') ?></p>
     <?php if ($event['access_mode'] === 'closed_list'): ?>
-    <p style="color:#9a94b8;font-size:.875rem">
-        Per votazioni a lista chiusa, importa gli elettori tramite CSV (funzionalità in arrivo).
-    </p>
+    <p style="color:#9a94b8;font-size:.875rem"><?= __('voters_closed_list_hint') ?></p>
     <?php else: ?>
-    <p style="color:#9a94b8;font-size:.875rem">
-        Gli elettori appariranno qui dopo la registrazione.
-    </p>
+    <p style="color:#9a94b8;font-size:.875rem"><?= __('voters_register_hint') ?></p>
     <?php endif ?>
 </div>
 <?php else: ?>
@@ -236,11 +232,11 @@ ob_start();
     <table class="uk-table uk-table-hover uk-table-divider uk-margin-remove" style="font-size:.875rem">
         <thead>
             <tr>
-                <th>Nome</th>
-                <th>Email</th>
-                <th>Stato</th>
+                <th><?= __('name') ?></th>
+                <th><?= __('email') ?></th>
+                <th><?= __('status') ?></th>
                 <th>Token</th>
-                <th>Registrazione</th>
+                <th><?= __('created_at') ?></th>
                 <th style="width:80px"></th>
             </tr>
         </thead>
@@ -251,11 +247,11 @@ ob_start();
                 <td><?= htmlspecialchars($v['email']) ?></td>
                 <td>
                     <?php if (!$v['approved']): ?>
-                    <span class="e-badge e-badge-closed">Sospeso</span>
+                    <span class="e-badge e-badge-closed"><?= __('status_suspended') ?></span>
                     <?php elseif ($v['token_used']): ?>
-                    <span class="e-badge e-badge-active">Votato</span>
+                    <span class="e-badge e-badge-active"><?= __('status_voted') ?></span>
                     <?php else: ?>
-                    <span class="e-badge e-badge-draft">Non votato</span>
+                    <span class="e-badge e-badge-draft"><?= __('status_not_voted') ?></span>
                     <?php endif ?>
                 </td>
                 <td style="color:#9a94b8;font-family:monospace;font-size:.75rem">
@@ -275,7 +271,7 @@ ob_start();
                             <input type="hidden" name="_action" value="toggle_approved">
                             <input type="hidden" name="voter_id" value="<?= $v['id'] ?>">
                             <input type="hidden" name="approved" value="0">
-                            <button uk-icon="icon:ban;ratio:.8" uk-tooltip="Sospendi"
+                            <button uk-icon="icon:ban;ratio:.8" uk-tooltip="<?= __('suspend') ?>"
                                     style="color:#e67e22;background:none;border:none;cursor:pointer;padding:0"
                                     class="uk-icon-link"></button>
                         </form>
@@ -285,7 +281,7 @@ ob_start();
                             <input type="hidden" name="_action" value="toggle_approved">
                             <input type="hidden" name="voter_id" value="<?= $v['id'] ?>">
                             <input type="hidden" name="approved" value="1">
-                            <button uk-icon="icon:check;ratio:.8" uk-tooltip="Approva"
+                            <button uk-icon="icon:check;ratio:.8" uk-tooltip="<?= __('approve') ?>"
                                     style="color:#27ae60;background:none;border:none;cursor:pointer;padding:0"
                                     class="uk-icon-link"></button>
                         </form>
@@ -295,8 +291,8 @@ ob_start();
                             <?= Csrf::field() ?>
                             <input type="hidden" name="_action" value="delete">
                             <input type="hidden" name="voter_id" value="<?= $v['id'] ?>">
-                            <button uk-icon="icon:trash;ratio:.8" uk-tooltip="Rimuovi"
-                                    data-confirm="Rimuovere questo elettore?"
+                            <button uk-icon="icon:trash;ratio:.8" uk-tooltip="<?= __('remove') ?>"
+                                    data-confirm="<?= htmlspecialchars(__('confirm_delete')) ?>"
                                     style="color:#e74c3c;background:none;border:none;cursor:pointer;padding:0"
                                     class="uk-icon-link"></button>
                         </form>

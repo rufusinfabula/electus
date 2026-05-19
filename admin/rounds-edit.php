@@ -202,9 +202,9 @@ ob_start();
 
         <!-- Parent round -->
         <div class="uk-width-1-2@m">
-            <label class="uk-form-label">Turno precedente <span style="color:#9a94b8">(opzionale)</span></label>
+            <label class="uk-form-label"><?= __('round_parent_label') ?> <span style="color:#9a94b8">(<?= __('optional') ?>)</span></label>
             <select class="uk-select" name="parent_round_id">
-                <option value="">— Nessuno (primo turno) —</option>
+                <option value=""><?= __('round_parent_none') ?></option>
                 <?php foreach ($allRounds as $r):
                     if ($r['id'] === ($round['id'] ?? 0)) continue; ?>
                 <option value="<?= $r['id'] ?>" <?= ($round['parent_round_id'] ?? null) == $r['id'] ? 'selected' : '' ?>>
@@ -222,10 +222,10 @@ ob_start();
     <?php if (!empty($allCategories)): ?>
     <hr style="margin:24px 0">
     <h4 style="font-size:.9rem;font-weight:700;color:var(--e-primary);margin-bottom:4px">
-        <?= $catTermP ?> attive in questo turno
+        <?= str_replace(':cat', $catTermP, __('cats_in_round_header')) ?>
     </h4>
     <p style="font-size:.8rem;color:#9a94b8;margin-bottom:16px">
-        Seleziona quali <?= $catTermP ?> sono in gioco. Per ogni <?= $catTermS ?> puoi definire quanti candidati avanzano al turno successivo.
+        <?= str_replace([':catp',':cats'], [$catTermP, $catTermS], __('cats_in_round_desc')) ?>
     </p>
 
     <?php
@@ -247,9 +247,9 @@ ob_start();
             <tr style="background:var(--e-bg)">
                 <th style="width:32px"></th>
                 <th><?= $catTermS ?></th>
-                <th style="width:160px">Avanzamento</th>
+                <th style="width:160px"><?= __('advancement_col') ?></th>
                 <th style="width:100px">Top-N</th>
-                <?php if ($nextRound): ?><th style="width:180px">Mappa a (turno <?= $nextRound['round_number'] ?>)</th><?php endif ?>
+                <?php if ($nextRound): ?><th style="width:180px"><?= str_replace(':n', (string)$nextRound['round_number'], __('maps_to_col')) ?></th><?php endif ?>
             </tr>
         </thead>
         <tbody>
@@ -275,10 +275,10 @@ ob_start();
                 <select class="uk-select uk-form-small e-cat-field"
                         name="cat_mode[<?= $cat['id'] ?>]"
                         <?= !$isActive ? 'disabled' : '' ?>>
-                    <option value="manual" <?= $mode === 'manual' ? 'selected' : '' ?>>Manuale</option>
-                    <option value="auto"   <?= $mode === 'auto'   ? 'selected' : '' ?>>Automatico (top-N)</option>
-                    <option value="all"    <?= $mode === 'all'    ? 'selected' : '' ?>>Tutti avanzano</option>
-                    <option value="none"   <?= $mode === 'none'   ? 'selected' : '' ?>>Nessuno avanza</option>
+                    <option value="manual" <?= $mode === 'manual' ? 'selected' : '' ?>><?= __('advancement_manual') ?></option>
+                    <option value="auto"   <?= $mode === 'auto'   ? 'selected' : '' ?>><?= __('advancement_auto_label') ?></option>
+                    <option value="all"    <?= $mode === 'all'    ? 'selected' : '' ?>><?= __('advancement_all') ?></option>
+                    <option value="none"   <?= $mode === 'none'   ? 'selected' : '' ?>><?= __('advancement_none') ?></option>
                 </select>
             </td>
             <td>
@@ -294,7 +294,7 @@ ob_start();
                 <select class="uk-select uk-form-small e-cat-field"
                         name="cat_next[<?= $cat['id'] ?>]"
                         <?= !$isActive ? 'disabled' : '' ?>>
-                    <option value="">— stessa categoria —</option>
+                    <option value=""><?= str_replace(':cat', $catTermS, __('same_category')) ?></option>
                     <?php foreach ($nextRoundCats as $nc): ?>
                     <option value="<?= $nc['id'] ?>" <?= $nextCat == $nc['id'] ? 'selected' : '' ?>>
                         <?= htmlspecialchars($nc['name']) ?>
@@ -313,9 +313,9 @@ ob_start();
     <!-- ── Model-specific config ──────────────────────────────────────────── -->
 
     <div id="config-multiple" class="uk-margin-top" style="display:none">
-        <hr><h4 style="font-size:.9rem;font-weight:600;color:var(--e-primary)">Multiple choice settings</h4>
+        <hr><h4 style="font-size:.9rem;font-weight:600;color:var(--e-primary)"><?= __('model_multiple') ?></h4>
         <div class="uk-width-1-4@m">
-            <label class="uk-form-label">Max choices per category</label>
+            <label class="uk-form-label"><?= str_replace(':cat', $catTermS, __('max_choices_per_cat')) ?></label>
             <input class="uk-input" type="number" name="config_max_choices" min="2"
                    value="<?= $cfg['max_choices'] ?? 3 ?>">
         </div>

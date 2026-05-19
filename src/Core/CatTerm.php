@@ -6,7 +6,7 @@ namespace Electus\Core;
 
 class CatTerm
 {
-    const DEFAULT_PRESET = 'scelta';
+    const DEFAULT_PRESET = 'categoria';
 
     const PRESETS = [
         'scelta'    => ['it' => ['s' => 'Scelta',    'p' => 'Scelte'],    'en' => ['s' => 'Option',    'p' => 'Options'],    'fr' => ['s' => 'Choix',      'p' => 'Choix']],
@@ -20,8 +20,9 @@ class CatTerm
         'incarico'  => ['it' => ['s' => 'Incarico',  'p' => 'Incarichi'], 'en' => ['s' => 'Assignment','p' => 'Assignments'],'fr' => ['s' => 'Mission',    'p' => 'Missions']],
     ];
 
-    public static function label(array $event, string $form = 'p', string $lang = 'it'): string
+    public static function label(array $event, string $form = 'p', string $lang = null): string
     {
+        if ($lang === null) $lang = \Electus\Core\Lang::current();
         $key    = $event['cat_term'] ?? self::DEFAULT_PRESET;
         $preset = self::PRESETS[$key] ?? self::PRESETS[self::DEFAULT_PRESET];
         $l      = $preset[$lang] ?? $preset['it'];
