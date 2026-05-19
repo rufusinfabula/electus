@@ -201,11 +201,18 @@ ob_start();
 
     $roundCats  = Round::categoriesFor((int) $round['id']);
     $isLast     = $i === count($rounds) - 1;
-
     $stepLabels = ['Bozza', 'In corso', 'Chiuso', 'Validato', 'Pubblicato'];
-    $catCount   = count($roundCats);
-    $showMore   = $catCount > 4;
-    $roundUid   = 'r' . $round['id'];
+
+    // Date-vs-status warning
+    $now      = time();
+    $opensTs  = $round['opens_at']  ? strtotime($round['opens_at'])  : 0;
+    $closesTs = $round['closes_at'] ? strtotime($round['closes_at']) : PHP_INT_MAX;
+    $dateWarn = '';
+    if ($round['status'] === 'active' && $opensTs > $now)   $dateWarn = 'future';
+    if ($round['status'] === 'active' && $closesTs < $now)  $dateWarn = 'expired';
+
+    // Advancement dot colours
+    $dotColor = ['auto'=>'#27ae60','all'=>'#27ae60','none'=>'#bbb','manual'=>'#6b52d4'];
 ?>
 <!-- Phase block -->
 <div class="e-pipeline-block e-card">
@@ -215,7 +222,7 @@ ob_start();
         <div class="uk-flex uk-flex-middle" style="gap:10px">
             <div class="e-pipeline-number"><?= $round['round_number'] ?></div>
             <div>
-                <div class="uk-flex uk-flex-middle" style="gap:6px">
+                <div class="uk-flex uk-flex-middle" style="gap:6px;flex-wrap:wrap">
                     <h3 style="margin:0;font-size:.95rem;font-weight:700;color:var(--e-text)">
                         <?= $round['label'] ? htmlspecialchars($round['label']) : 'Fase ' . $round['round_number'] ?>
                     </h3>
@@ -223,6 +230,15 @@ ob_start();
                     <span style="display:inline-flex;align-items:center;gap:4px;font-size:.68rem;font-weight:700;color:#1a7a3c;background:#e6f9ee;padding:2px 8px;border-radius:20px">
                         <span style="width:6px;height:6px;border-radius:50%;background:#1a7a3c;animation:e-pulse 1.4s ease-in-out infinite"></span>
                         Live
+                    </span>
+                    <?php endif ?>
+                    <?php if ($dateWarn === 'future'): ?>
+                    <span style="font-size:.68rem;font-weight:600;color:#a05800;background:#fdf2e3;padding:2px 8px;border-radius:20px">
+                        ⚠ Apre il <?= date('d/m', $opensTs) ?>
+                    </span>
+                    <?php elseif ($dateWarn === 'expired'): ?>
+                    <span style="font-size:.68rem;font-weight:600;color:#c0392b;background:#fde8e8;padding:2px 8px;border-radius:20px">
+                        ⚠ Date scadute
                     </span>
                     <?php endif ?>
                 </div>
@@ -252,31 +268,25 @@ ob_start();
         </div>
     </div>
 
-    <!-- Active categories with advancement summary -->
+    <!-- Categories — compact 3-col grid, dot = advancement mode -->
     <?php if (!empty($roundCats)): ?>
-    <div class="e-pipeline-cats<?= $showMore ? ' e-cats-collapsible' : '' ?>" id="cats-<?= $roundUid ?>">
-        <?php foreach ($roundCats as $ci => $cat):
+    <div class="e-cats-grid">
+        <?php foreach ($roundCats as $cat):
             $mode     = $cat['advancement_mode'] ?? 'manual';
             $cnt      = $cat['advancement_count'] ?? null;
-            $advLabel = match($mode) {
-                'auto'   => 'top ' . ($cnt ?? '?') . ' avanzano',
-                'all'    => 'tutti avanzano',
-                'none'   => 'nessuno avanza',
-                default  => 'avanzamento manuale',
+            $advTitle = match($mode) {
+                'auto'   => 'Top ' . ($cnt ?? '?') . ' avanzano automaticamente',
+                'all'    => 'Tutti avanzano',
+                'none'   => 'Nessuno avanza',
+                default  => 'Avanzamento manuale',
             };
+            $dc = $dotColor[$mode] ?? '#bbb';
         ?>
-        <div class="e-pipeline-cat<?= ($showMore && $ci >= 4) ? ' e-cat-hidden' : '' ?>">
-            <span class="e-pipeline-cat-name"><?= htmlspecialchars($cat['name']) ?></span>
-            <?php if (!$isLast): ?>
-            <span class="e-pipeline-cat-adv e-pipeline-adv-<?= $mode ?>"><?= $advLabel ?></span>
-            <?php endif ?>
+        <div class="e-cat-chip" title="<?= htmlspecialchars($advTitle) ?>">
+            <span class="e-cat-dot" style="background:<?= $dc ?>"></span>
+            <span class="e-cat-chip-name"><?= htmlspecialchars($cat['name']) ?></span>
         </div>
         <?php endforeach ?>
-        <?php if ($showMore): ?>
-        <button type="button" class="e-cats-more" onclick="toggleCats('<?= $roundUid ?>', this)">
-            +<?= $catCount - 4 ?> altre
-        </button>
-        <?php endif ?>
     </div>
     <?php endif ?>
 
@@ -329,19 +339,19 @@ ob_start();
             <?php endif ?>
         </form>
         <?php endif ?>
-
-        <!-- Destructive action (icon only, far right) -->
-        <form method="post" style="display:inline;margin:0 0 0 auto">
-            <?= Csrf::field() ?>
-            <input type="hidden" name="_action" value="delete">
-            <input type="hidden" name="round_id" value="<?= $round['id'] ?>">
-            <button class="uk-button uk-button-link uk-button-small" style="color:#ddd;padding:0 6px"
-                    title="<?= htmlspecialchars(__('confirm_delete')) ?>"
-                    data-confirm="<?= htmlspecialchars(__('confirm_delete')) ?>">
-                <span uk-icon="icon:trash;ratio:.8"></span>
-            </button>
-        </form>
     </div>
+
+    <!-- Delete — absolute bottom-right of card -->
+    <form method="post" class="e-round-delete">
+        <?= Csrf::field() ?>
+        <input type="hidden" name="_action" value="delete">
+        <input type="hidden" name="round_id" value="<?= $round['id'] ?>">
+        <button type="button"
+                onclick="if(confirm('<?= htmlspecialchars(__('confirm_delete')) ?>')) this.closest('form').submit()"
+                class="e-round-delete-btn" title="Elimina turno">
+            <span uk-icon="icon:trash;ratio:.85"></span>
+        </button>
+    </form>
 
 </div>
 
@@ -363,16 +373,6 @@ ob_start();
     </a>
 </div>
 
-<script>
-function toggleCats(uid, btn) {
-    var wrap = document.getElementById('cats-' + uid);
-    var hidden = wrap.querySelectorAll('.e-cat-hidden');
-    var expanded = wrap.classList.toggle('e-cats-expanded');
-    hidden.forEach(function(el) { el.style.display = expanded ? 'flex' : 'none'; });
-    var n = hidden.length;
-    btn.textContent = expanded ? 'Mostra meno' : '+' + n + ' altre';
-}
-</script>
 
 </div><!-- /e-pipeline -->
 <?php endif ?>

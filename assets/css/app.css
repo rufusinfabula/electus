@@ -605,15 +605,53 @@
     pointer-events: none;
 }
 
+/* ── Category grid (compact, dot = advancement mode) ────────────────────────── */
+.e-cats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid #f5f3ff;
+}
+
+.e-cat-chip {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--e-bg);
+    border: 1px solid #ece9f5;
+    border-radius: 6px;
+    padding: 3px 8px;
+    font-size: .72rem;
+    min-width: 0;
+    cursor: default;
+}
+
+.e-cat-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.e-cat-chip-name {
+    font-weight: 600;
+    color: var(--e-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 /* ── Round action bar ───────────────────────────────────────────────────────── */
 .e-round-actions {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 6px;
-    margin-top: 12px;
-    padding-top: 10px;
-    border-top: 1px solid #f5f3ff;
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid #ece9f5;
 }
 
 .e-btn-danger {
@@ -628,23 +666,28 @@
     color: #fff;
 }
 
-/* ── Collapsible category tags ──────────────────────────────────────────────── */
-.e-cat-hidden { display: none; }
-
-.e-cats-more {
-    background: none;
-    border: 1px dashed #c8c3e0;
-    border-radius: 20px;
-    padding: 2px 10px;
-    font-size: .75rem;
-    color: #9a94b8;
-    cursor: pointer;
-    transition: color .15s, border-color .15s;
+/* ── Round delete button (absolute bottom-right of card) ────────────────────── */
+.e-round-delete {
+    position: absolute;
+    bottom: 14px;
+    right: 16px;
+    margin: 0;
 }
 
-.e-cats-more:hover {
-    color: var(--e-primary);
-    border-color: var(--e-primary);
+.e-round-delete-btn {
+    background: none;
+    border: none;
+    padding: 4px;
+    cursor: pointer;
+    color: #c8c3e0;
+    line-height: 1;
+    border-radius: 6px;
+    transition: color .15s, background .15s;
+}
+
+.e-round-delete-btn:hover {
+    color: #e74c3c;
+    background: #fde8e8;
 }
 
 /* ── Borda point rows ───────────────────────────────────────────────────────── */
