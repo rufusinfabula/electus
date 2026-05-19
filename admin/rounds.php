@@ -33,6 +33,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         };
     }
 
+    if ($action === 'update_cat_adv' && $roundId) {
+        $catId   = (int) ($_POST['category_id'] ?? 0);
+        $mode    = $_POST['advancement_mode'] ?? 'manual';
+        $count   = strlen($_POST['advancement_count'] ?? '') ? (int) $_POST['advancement_count'] : null;
+        if (!in_array($mode, ['auto','all','none','manual'], true)) $mode = 'manual';
+        if ($catId) {
+            Database::get()->prepare(
+                'UPDATE round_category_map SET advancement_mode=?, advancement_count=? WHERE round_id=? AND category_id=?'
+            )->execute([$mode, $count, $roundId, $catId]);
+            Flash::success('Avanzamento aggiornato.');
+        }
+    }
+
     header('Location: /admin/rounds.php?event_id=' . $eventId);
     exit;
 }
@@ -211,6 +224,10 @@ ob_start();
     if ($round['status'] === 'active' && $opensTs > $now)   $dateWarn = 'future';
     if ($round['status'] === 'active' && $closesTs < $now)  $dateWarn = 'expired';
 
+    // Display step: override "active" to show "pending" when dates are in the future
+    $displayStep = $step;
+    if ($dateWarn === 'future') $displayStep = -1; // special: scheduled/pending
+
     // Advancement dot colours
     $dotColor = ['auto'=>'#27ae60','all'=>'#27ae60','none'=>'#bbb','manual'=>'#6b52d4'];
 ?>
@@ -226,15 +243,14 @@ ob_start();
                     <h3 style="margin:0;font-size:.95rem;font-weight:700;color:var(--e-text)">
                         <?= $round['label'] ? htmlspecialchars($round['label']) : 'Fase ' . $round['round_number'] ?>
                     </h3>
-                    <?php if ($round['status'] === 'active' && $event['status'] === 'active'): ?>
+                    <?php if ($round['status'] === 'active' && $event['status'] === 'active' && $dateWarn === ''): ?>
                     <span style="display:inline-flex;align-items:center;gap:4px;font-size:.68rem;font-weight:700;color:#1a7a3c;background:#e6f9ee;padding:2px 8px;border-radius:20px">
                         <span style="width:6px;height:6px;border-radius:50%;background:#1a7a3c;animation:e-pulse 1.4s ease-in-out infinite"></span>
                         Live
                     </span>
-                    <?php endif ?>
-                    <?php if ($dateWarn === 'future'): ?>
-                    <span style="font-size:.68rem;font-weight:600;color:#a05800;background:#fdf2e3;padding:2px 8px;border-radius:20px">
-                        ⚠ Apre il <?= date('d/m', $opensTs) ?>
+                    <?php elseif ($dateWarn === 'future'): ?>
+                    <span style="display:inline-flex;align-items:center;gap:4px;font-size:.68rem;font-weight:600;color:#a05800;background:#fdf2e3;padding:2px 8px;border-radius:20px">
+                        <span uk-icon="icon:clock;ratio:.7"></span> Apre il <?= date('d/m', $opensTs) ?>
                     </span>
                     <?php elseif ($dateWarn === 'expired'): ?>
                     <span style="font-size:.68rem;font-weight:600;color:#c0392b;background:#fde8e8;padding:2px 8px;border-radius:20px">
@@ -255,9 +271,23 @@ ob_start();
 
         <!-- Lifecycle stepper (dot-based) -->
         <div class="e-stepper" style="flex-shrink:0">
+            <?php if ($displayStep === -1): ?>
+            <!-- Scheduled/pending state: shown between Bozza and In corso -->
+            <span class="e-stepper-dot e-step-done" title="Bozza"></span>
+            <span class="e-stepper-sep"></span>
+            <span class="e-stepper-dot e-step-pending" title="In attesa">
+                <span class="e-stepper-label e-stepper-label-pending">In attesa</span>
+            </span>
+            <span class="e-stepper-sep"></span>
+            <span class="e-stepper-dot e-step-future" title="In corso"></span>
+            <span class="e-stepper-sep"></span>
+            <span class="e-stepper-dot e-step-future" title="Chiuso"></span>
+            <span class="e-stepper-sep"></span>
+            <span class="e-stepper-dot e-step-future" title="Validato"></span>
+            <?php else: ?>
             <?php foreach ($stepLabels as $s => $lbl):
-                $done    = $step > $s;
-                $current = $step === $s;
+                $done    = $displayStep > $s;
+                $current = $displayStep === $s;
             ?>
             <?php if ($s > 0): ?><span class="e-stepper-sep"></span><?php endif ?>
             <span class="e-stepper-dot <?= $done ? 'e-step-done' : ($current ? 'e-step-current' : 'e-step-future') ?>"
@@ -265,26 +295,66 @@ ob_start();
                 <?php if ($current): ?><span class="e-stepper-label"><?= $lbl ?></span><?php endif ?>
             </span>
             <?php endforeach ?>
+            <?php endif ?>
         </div>
     </div>
 
-    <!-- Categories — compact 3-col grid, dot = advancement mode -->
+    <!-- Categories — compact 3-col grid with popover for advancement settings -->
     <?php if (!empty($roundCats)): ?>
     <div class="e-cats-grid">
         <?php foreach ($roundCats as $cat):
             $mode     = $cat['advancement_mode'] ?? 'manual';
             $cnt      = $cat['advancement_count'] ?? null;
-            $advTitle = match($mode) {
-                'auto'   => 'Top ' . ($cnt ?? '?') . ' avanzano automaticamente',
-                'all'    => 'Tutti avanzano',
-                'none'   => 'Nessuno avanza',
-                default  => 'Avanzamento manuale',
+            $advDesc  = match($mode) {
+                'auto'   => 'Top ' . ($cnt ?? '?') . ' avanzano automaticamente al turno successivo.',
+                'all'    => 'Tutti i candidati avanzano al turno successivo.',
+                'none'   => 'Nessun candidato avanza al turno successivo.',
+                default  => 'L\'avanzamento viene scelto manualmente dall\'admin.',
             };
-            $dc = $dotColor[$mode] ?? '#bbb';
+            $dc  = $dotColor[$mode] ?? '#bbb';
+            $pid = 'pop-' . $round['id'] . '-' . $cat['id'];
         ?>
-        <div class="e-cat-chip" title="<?= htmlspecialchars($advTitle) ?>">
+        <div class="e-cat-chip">
             <span class="e-cat-dot" style="background:<?= $dc ?>"></span>
             <span class="e-cat-chip-name"><?= htmlspecialchars($cat['name']) ?></span>
+            <!-- Popover trigger -->
+            <div class="uk-inline" style="margin-left:auto;flex-shrink:0">
+                <button type="button" class="e-cat-pop-btn" title="Impostazioni avanzamento">⋯</button>
+                <div uk-drop="mode:click;pos:bottom-right;offset:6;boundary:.e-pipeline-block"
+                     class="e-cat-popover uk-drop">
+                    <div class="e-cat-pop-inner">
+                        <div class="e-cat-pop-title"><?= htmlspecialchars($cat['name']) ?></div>
+                        <div class="e-cat-pop-desc"><?= htmlspecialchars($advDesc) ?></div>
+                        <?php if (!$isLast): ?>
+                        <form method="post" style="margin-top:10px">
+                            <?= Csrf::field() ?>
+                            <input type="hidden" name="_action"     value="update_cat_adv">
+                            <input type="hidden" name="round_id"   value="<?= $round['id'] ?>">
+                            <input type="hidden" name="category_id" value="<?= $cat['id'] ?>">
+                            <label style="font-size:.72rem;font-weight:600;color:#6b6494;display:block;margin-bottom:4px">Avanzamento al turno successivo</label>
+                            <select name="advancement_mode" class="uk-select uk-form-small"
+                                    onchange="this.nextElementSibling.style.display=this.value==='auto'?'flex':'none'">
+                                <?php foreach (['auto'=>'Top N avanzano','all'=>'Tutti avanzano','none'=>'Nessuno avanza','manual'=>'Manuale'] as $mv => $ml): ?>
+                                <option value="<?= $mv ?>" <?= $mode === $mv ? 'selected' : '' ?>><?= $ml ?></option>
+                                <?php endforeach ?>
+                            </select>
+                            <div style="display:<?= $mode === 'auto' ? 'flex' : 'none' ?>;align-items:center;gap:6px;margin-top:6px">
+                                <label style="font-size:.72rem;color:#6b6494;white-space:nowrap">Top</label>
+                                <input type="number" name="advancement_count"
+                                       value="<?= htmlspecialchars((string)($cnt ?? '')) ?>"
+                                       min="1" class="uk-input uk-form-small" style="width:60px">
+                                <label style="font-size:.72rem;color:#6b6494;white-space:nowrap">candidati</label>
+                            </div>
+                            <button type="submit" class="uk-button uk-button-primary uk-button-small" style="margin-top:8px;width:100%">
+                                Salva
+                            </button>
+                        </form>
+                        <?php else: ?>
+                        <p style="font-size:.75rem;color:#9a94b8;margin:8px 0 0;font-style:italic">Ultimo turno — nessun avanzamento.</p>
+                        <?php endif ?>
+                    </div>
+                </div>
+            </div>
         </div>
         <?php endforeach ?>
     </div>

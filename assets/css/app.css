@@ -591,6 +591,7 @@
 .e-step-done    { background: #27ae60; }
 .e-step-current { background: var(--e-primary); box-shadow: 0 0 0 3px rgba(76,61,158,.18); }
 .e-step-future  { background: #e0ddf0; }
+.e-step-pending { background: #e67e22; box-shadow: 0 0 0 3px rgba(230,126,34,.2); }
 
 .e-stepper-label {
     position: absolute;
@@ -603,6 +604,11 @@
     padding: 1px 7px;
     border-radius: 10px;
     pointer-events: none;
+}
+
+.e-stepper-label-pending {
+    color: #a05800;
+    background: #fdf2e3;
 }
 
 /* ── Category grid (compact, dot = advancement mode) ────────────────────────── */
@@ -641,6 +647,54 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    flex: 1;
+    min-width: 0;
+}
+
+/* ⋯ popover trigger button */
+.e-cat-pop-btn {
+    background: none;
+    border: none;
+    padding: 0 2px;
+    cursor: pointer;
+    font-size: .85rem;
+    color: #c8c3e0;
+    line-height: 1;
+    border-radius: 4px;
+    transition: color .15s, background .15s;
+}
+
+.e-cat-pop-btn:hover {
+    color: var(--e-primary);
+    background: var(--e-bg);
+}
+
+/* Popover balloon */
+.e-cat-popover {
+    min-width: 240px;
+    max-width: 280px;
+    z-index: 1050;
+}
+
+.e-cat-pop-inner {
+    background: #fff;
+    border: 1px solid #ece9f5;
+    border-radius: 12px;
+    padding: 14px 16px;
+    box-shadow: 0 8px 24px rgba(76,61,158,.13);
+}
+
+.e-cat-pop-title {
+    font-size: .82rem;
+    font-weight: 700;
+    color: var(--e-text);
+    margin-bottom: 4px;
+}
+
+.e-cat-pop-desc {
+    font-size: .75rem;
+    color: #9a94b8;
+    line-height: 1.4;
 }
 
 /* ── Round action bar ───────────────────────────────────────────────────────── */
