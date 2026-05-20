@@ -144,6 +144,112 @@ class Deduplication
         return $stmt->fetchAll();
     }
 
+    /**
+     * Returns pending queue entries grouped by (category_id, suggested_candidate_id).
+     * Each group has a 'items' array. Entries with no match form singleton groups.
+     */
+    public static function getPendingQueueGrouped(int $roundId): array
+    {
+        $flat   = self::getPendingQueue($roundId);
+        $groups = [];
+
+        foreach ($flat as $item) {
+            $key = $item['category_id'] . ':' . ($item['suggested_candidate_id'] ?? ('x' . $item['id']));
+            if (!isset($groups[$key])) {
+                $groups[$key] = [
+                    'category_id'            => $item['category_id'],
+                    'category_name'          => $item['category_name'],
+                    'suggested_candidate_id' => $item['suggested_candidate_id'],
+                    'suggested_name'         => $item['suggested_name'],
+                    'max_score'              => $item['similarity_score'],
+                    'items'                  => [],
+                ];
+            }
+            $groups[$key]['items'][] = $item;
+        }
+
+        return array_values($groups);
+    }
+
+    /**
+     * Merge a group of queue entries into one target candidate.
+     * $items: array of ['queue_id' => int, 'source_candidate_id' => int|null]
+     */
+    public static function mergeGroup(
+        array  $items,
+        int    $targetCandidateId,
+        int    $reviewedBy,
+        string $canonicalOverride = ''
+    ): void {
+        $canonicalOverride = Candidate::sanitizeName($canonicalOverride);
+        $pdo = Database::get();
+        $pdo->beginTransaction();
+        try {
+            if ($canonicalOverride !== '') {
+                $newNorm = Candidate::normalize($canonicalOverride);
+                $pdo->prepare('UPDATE candidates SET name = ?, canonical_name = ? WHERE id = ?')
+                    ->execute([$canonicalOverride, $newNorm, $targetCandidateId]);
+            }
+
+            $stmt = $pdo->prepare(
+                'SELECT c.canonical_name, c.category_id, er.event_id
+                 FROM candidates c JOIN event_rounds er ON er.id = c.round_id
+                 WHERE c.id = ? LIMIT 1'
+            );
+            $stmt->execute([$targetCandidateId]);
+            $target = $stmt->fetch();
+            if (!$target) throw new \RuntimeException('Target candidate not found.');
+
+            foreach ($items as ['queue_id' => $queueId, 'source_candidate_id' => $sourceCandidateId]) {
+                $stmt = $pdo->prepare('SELECT * FROM dedup_queue WHERE id = ? LIMIT 1');
+                $stmt->execute([$queueId]);
+                $entry = $stmt->fetch();
+                if (!$entry) continue;
+
+                if ($sourceCandidateId && $sourceCandidateId !== $targetCandidateId) {
+                    $pdo->prepare('UPDATE votes SET candidate_id = ? WHERE candidate_id = ? AND round_id = ?')
+                        ->execute([$targetCandidateId, $sourceCandidateId, $entry['round_id']]);
+
+                    $pdo->prepare("UPDATE candidates SET status = 'merged' WHERE id = ?")
+                        ->execute([$sourceCandidateId]);
+
+                    $pdo->prepare(
+                        'INSERT IGNORE INTO candidate_aliases
+                         (event_id, category_id, alias, canonical_name, created_by)
+                         VALUES (?, ?, ?, ?, ?)'
+                    )->execute([
+                        $target['event_id'],
+                        $entry['category_id'],
+                        $entry['normalized_input'],
+                        $target['canonical_name'],
+                        $reviewedBy,
+                    ]);
+                }
+
+                $pdo->prepare(
+                    "UPDATE dedup_queue SET status = 'merged', reviewed_by = ?, reviewed_at = NOW() WHERE id = ?"
+                )->execute([$reviewedBy, $queueId]);
+            }
+
+            $pdo->commit();
+        } catch (\Throwable $e) {
+            $pdo->rollBack();
+            throw $e;
+        }
+    }
+
+    /** Mark a group of queue entries as 'kept'. */
+    public static function keepGroup(array $queueIds, int $reviewedBy): void
+    {
+        $pdo  = Database::get();
+        $stmt = $pdo->prepare(
+            "UPDATE dedup_queue SET status = 'kept', reviewed_by = ?, reviewed_at = NOW() WHERE id = ?"
+        );
+        foreach ($queueIds as $qid) {
+            $stmt->execute([$reviewedBy, (int)$qid]);
+        }
+    }
+
     public static function getReviewedCount(int $roundId): int
     {
         $pdo  = Database::get();
@@ -165,6 +271,7 @@ class Deduplication
         int $reviewedBy,
         string $canonicalOverride = ''
     ): void {
+        $canonicalOverride = Candidate::sanitizeName($canonicalOverride);
         $pdo = Database::get();
         $pdo->beginTransaction();
 
@@ -233,6 +340,7 @@ class Deduplication
         int $reviewedBy,
         string $canonicalOverride = ''
     ): void {
+        $canonicalOverride = Candidate::sanitizeName($canonicalOverride);
         $pdo = Database::get();
         $pdo->beginTransaction();
         try {
@@ -286,6 +394,83 @@ class Deduplication
                  SET status = 'merged', reviewed_by = ?, reviewed_at = NOW()
                  WHERE round_id = ? AND normalized_input = ? AND status = 'pending'"
             )->execute([$reviewedBy, $roundId, $source['canonical_name']]);
+
+            $pdo->commit();
+        } catch (\Throwable $e) {
+            $pdo->rollBack();
+            throw $e;
+        }
+    }
+
+    /**
+     * Merge a free-form list of candidate IDs chosen by the admin (no queue entry required).
+     * The target is the candidate with the most votes; ties broken by lowest ID.
+     */
+    public static function mergeManual(array $candidateIds, int $reviewedBy, string $canonicalOverride = ''): void
+    {
+        $canonicalOverride = Candidate::sanitizeName($canonicalOverride);
+        if (count($candidateIds) < 2) return;
+
+        $pdo = Database::get();
+        $pdo->beginTransaction();
+        try {
+            // Pick target: candidate with most votes in this round
+            $placeholders = implode(',', array_fill(0, count($candidateIds), '?'));
+            $stmt = $pdo->prepare(
+                "SELECT c.id, c.round_id, c.canonical_name, c.category_id, er.event_id,
+                        (SELECT COUNT(*) FROM votes v WHERE v.candidate_id = c.id AND v.round_id = c.round_id) AS vote_count
+                 FROM candidates c JOIN event_rounds er ON er.id = c.round_id
+                 WHERE c.id IN ($placeholders)
+                 ORDER BY vote_count DESC, c.id ASC
+                 LIMIT 1"
+            );
+            $stmt->execute($candidateIds);
+            $target = $stmt->fetch();
+            if (!$target) throw new \RuntimeException('Target candidate not found.');
+            $targetId = (int) $target['id'];
+
+            // Optional rename
+            if ($canonicalOverride !== '') {
+                $newNorm = Candidate::normalize($canonicalOverride);
+                $pdo->prepare('UPDATE candidates SET name = ?, canonical_name = ? WHERE id = ?')
+                    ->execute([$canonicalOverride, $newNorm, $targetId]);
+                $target['canonical_name'] = $newNorm;
+            }
+
+            foreach ($candidateIds as $cid) {
+                $cid = (int) $cid;
+                if ($cid === $targetId) continue;
+
+                $stmt = $pdo->prepare('SELECT canonical_name, category_id FROM candidates WHERE id = ?');
+                $stmt->execute([$cid]);
+                $source = $stmt->fetch();
+                if (!$source) continue;
+
+                $pdo->prepare('UPDATE votes SET candidate_id = ? WHERE candidate_id = ? AND round_id = ?')
+                    ->execute([$targetId, $cid, $target['round_id']]);
+
+                $pdo->prepare("UPDATE candidates SET status = 'merged' WHERE id = ?")
+                    ->execute([$cid]);
+
+                $pdo->prepare(
+                    'INSERT IGNORE INTO candidate_aliases
+                     (event_id, category_id, alias, canonical_name, created_by)
+                     VALUES (?, ?, ?, ?, ?)'
+                )->execute([
+                    $target['event_id'],
+                    $source['category_id'],
+                    $source['canonical_name'],
+                    $target['canonical_name'],
+                    $reviewedBy,
+                ]);
+
+                // Close any open dedup queue entry for this source
+                $pdo->prepare(
+                    "UPDATE dedup_queue
+                     SET status = 'merged', reviewed_by = ?, reviewed_at = NOW()
+                     WHERE round_id = ? AND normalized_input = ? AND status = 'pending'"
+                )->execute([$reviewedBy, $target['round_id'], $source['canonical_name']]);
+            }
 
             $pdo->commit();
         } catch (\Throwable $e) {

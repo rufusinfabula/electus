@@ -113,9 +113,15 @@ return [
     'dedup_normalized' => 'Normalizzato',
     'dedup_suggestion' => 'Possibile corrispondenza',
     'dedup_score'      => 'Somiglianza',
-    'dedup_merge'      => 'Unisci',
-    'dedup_keep'       => 'Mantieni separato',
-    'dedup_exclude'    => 'Escludi',
+    'dedup_merge'           => 'Unisci',
+    'dedup_keep'            => 'Mantieni separato',
+    'dedup_exclude'         => 'Escludi',
+    'dedup_merge_selected'  => 'Unisci selezionate',
+    'dedup_keep_all'        => 'Mantieni tutte separate',
+    'dedup_variants'        => 'variante/i',
+    'dedup_canonical_label' => 'Nome canonico (sovrascrive il suggerimento)',
+    'dedup_browse_tab'      => 'Sfoglia candidati',
+    'dedup_select_hint'     => 'Seleziona 2 o più candidati per unirli. La barra di fusione appare in cima.',
     'dedup_intro'      => 'Questi nomi potrebbero essere duplicati. Uniscili per evitare voti spezzati, mantienili separati se sono persone diverse, oppure escludili dai risultati.',
 
     // Results
@@ -258,6 +264,7 @@ return [
     // Results
     'stat_voters'          => 'Votanti',
     'stat_votes_cast'      => 'Voti espressi',
+    'stat_unique_candidates' => 'Candidati',
     'votes_not_validated'  => 'Voti non ancora validati',
     'results_public_badge' => 'Risultati pubblici',
     'results_not_public'   => 'Risultati non pubblicati',

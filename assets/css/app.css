@@ -893,7 +893,6 @@
 
 /* Quill editor in admin */
 .e-quill-editor {
-    min-height: 120px;
     background: #fff;
 }
 .ql-toolbar {
@@ -904,4 +903,8 @@
     border-radius: 0 0 6px 6px;
     font-size: .9rem;
     border-color: #e8e4f0 !important;
+    height: auto !important;
+}
+.ql-editor {
+    min-height: 120px;
 }

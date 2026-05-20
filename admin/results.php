@@ -6,6 +6,7 @@ require __DIR__ . '/bootstrap.php';
 
 use Electus\Core\Auth;
 use Electus\Core\CatTerm;
+use Electus\Core\Database;
 use Electus\Core\Csrf;
 use Electus\Core\Flash;
 use Electus\Models\Candidate;
@@ -73,6 +74,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         })(),
 
         // Dedup actions
+        'merge_group' => (function () use ($user) {
+            $targetId  = (int) ($_POST['target_candidate_id'] ?? 0);
+            $canonical = trim($_POST['canonical_override'] ?? '');
+            $items = [];
+            foreach ($_POST['items'] ?? [] as $v) {
+                [$qid, $cid] = explode(':', $v, 2);
+                $items[] = ['queue_id' => (int)$qid, 'source_candidate_id' => (int)$cid];
+            }
+            if ($targetId && !empty($items)) {
+                try { Deduplication::mergeGroup($items, $targetId, $user['id'], $canonical); Flash::success(__('candidates_merged_alias')); }
+                catch (\Throwable $e) { Flash::error(__('error_prefix') . $e->getMessage()); }
+            }
+        })(),
+
+        'keep_group' => (function () use ($user) {
+            $queueIds = array_map('intval', $_POST['queue_ids'] ?? []);
+            if (!empty($queueIds)) { Deduplication::keepGroup($queueIds, $user['id']); Flash::success(__('candidate_kept_separate')); }
+        })(),
+
         'merge' => (function () use ($roundId, $user) {
             $queueId   = (int) ($_POST['queue_id'] ?? 0);
             $sourceId  = (int) ($_POST['source_candidate_id'] ?? 0);
@@ -108,7 +128,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         default => null,
     };
 
-    $redirectTab = in_array($action, ['merge','keep','exclude','delete_alias','rescan'], true) ? 'review' : 'results';
+    $redirectTab = in_array($action, ['merge_group','keep_group','merge','keep','exclude','delete_alias','rescan'], true) ? 'review' : 'results';
     header('Location: /admin/results.php?round_id=' . $roundId . '&tab=' . $redirectTab);
     exit;
 }
@@ -137,20 +157,23 @@ $round             = Round::find($roundId);
 $resultsByCategory = Results::forRound($roundId);
 $voterCount        = Results::voterCount($roundId);
 $voteRowCount      = Results::voteRowCount($roundId);
+$stmt = Database::get()->prepare("SELECT COUNT(*) FROM candidates WHERE round_id = ? AND status = 'active'");
+$stmt->execute([$roundId]);
+$uniqueCandidates = (int) $stmt->fetchColumn();
 $validatorInfo     = Results::validatorInfo($roundId);
 $allRounds         = Round::forEvent($eventId);
 $laterRounds       = array_filter($allRounds, fn($r) => $r['round_number'] > $round['round_number']);
 
 // Dedup data (for open rounds)
-$isOpen        = $round['model'] === 'open';
-$dedupQueue    = $isOpen ? Deduplication::getPendingQueue($roundId)    : [];
-$reviewedCount = $isOpen ? Deduplication::getReviewedCount($roundId)   : 0;
-$aliases       = $isOpen ? Deduplication::getAliasDictionary($eventId) : [];
-$allCandidates = $isOpen ? Candidate::forRound($roundId)               : [];
+$isOpen         = $round['model'] === 'open';
+$dedupGroups    = $isOpen ? Deduplication::getPendingQueueGrouped($roundId) : [];
+$reviewedCount  = $isOpen ? Deduplication::getReviewedCount($roundId)      : 0;
+$aliases        = $isOpen ? Deduplication::getAliasDictionary($eventId)    : [];
+$allCandidates  = $isOpen ? Candidate::forRound($roundId)                  : [];
 $candByCategory = [];
 foreach ($allCandidates as $c) { $candByCategory[$c['category_id']][] = $c; }
 
-$pendingCount = count($dedupQueue);
+$pendingCount = count($dedupGroups);
 
 $catTermS       = CatTerm::label($event, 's');
 $catTermP       = CatTerm::label($event, 'p');
@@ -189,6 +212,12 @@ ob_start();
 
 <!-- Stats row -->
 <div class="uk-grid-small uk-margin-bottom" uk-grid>
+    <div class="uk-width-auto">
+        <div class="e-stat" style="min-width:120px">
+            <div class="e-stat-value" style="color:var(--e-accent)"><?= $uniqueCandidates ?></div>
+            <div class="e-stat-label"><?= __('stat_unique_candidates') ?></div>
+        </div>
+    </div>
     <div class="uk-width-auto">
         <div class="e-stat" style="min-width:120px">
             <div class="e-stat-value"><?= $voterCount ?></div>
@@ -332,74 +361,79 @@ ob_start();
 <?php else: ?>
 
 <?php foreach ($resultsByCategory as $catId => $rows):
-    $catName = $rows[0]['category_name'];
-    $chartId = 'chart-cat-' . $catId;
-    $labels  = array_map(fn($r) => $r['candidate_name'], $rows);
-    $values  = array_map(fn($r) => (float)$r['total_points'], $rows);
-    $winner  = $rows[0]['candidate_name'];
+    $catName    = $rows[0]['category_name'];
+    $chartId    = 'chart-cat-' . $catId;
+    $labels     = array_map(fn($r) => $r['candidate_name'], $rows);
+    $values     = array_map(fn($r) => (float)$r['total_points'], $rows);
+    $winner     = $rows[0]['candidate_name'];
+    $sumVotes   = array_sum(array_column($rows, 'total_votes'));
+    $sumPoints  = array_sum(array_column($rows, 'total_points'));
 ?>
 <div class="uk-margin-medium-bottom">
     <h3 style="font-size:.82rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--e-accent);margin-bottom:10px">
         <?= htmlspecialchars($catName) ?>
     </h3>
-    <div class="uk-grid-medium" uk-grid>
-        <div class="uk-width-1-2@l">
-            <div class="e-table">
-                <table class="uk-table uk-table-hover uk-table-divider uk-table-small uk-margin-remove">
-                    <thead>
-                        <tr>
-                            <th style="width:36px">#</th>
-                            <th><?= __('candidate_col') ?></th>
-                            <th style="text-align:right"><?= __('total_votes') ?></th>
-                            <th style="text-align:right"><?= __('total_points') ?></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    <?php foreach ($rows as $r): ?>
-                    <tr <?= $r['rank'] == 1 ? 'style="background:#f0fdf4;font-weight:700"' : '' ?>>
-                        <td><?= $r['rank'] == 1 ? '<span style="color:#27ae60">&#9733;</span>' : '<span style="color:#9a94b8">' . $r['rank'] . '</span>' ?></td>
-                        <td><?= htmlspecialchars($r['candidate_name']) ?></td>
-                        <td style="text-align:right;color:#6b6494"><?= $r['total_votes'] ?></td>
-                        <td style="text-align:right;color:var(--e-primary);font-weight:600"><?= $r['total_points'] ?></td>
-                    </tr>
-                    <?php endforeach ?>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        <div class="uk-width-1-2@l">
-            <div class="e-card" style="height:100%;min-height:180px">
-                <canvas id="<?= $chartId ?>" style="max-height:300px"></canvas>
-            </div>
-        </div>
+    <div class="e-table">
+        <table class="uk-table uk-table-hover uk-table-divider uk-table-small uk-margin-remove">
+            <thead>
+                <tr>
+                    <th style="width:36px">#</th>
+                    <th><?= __('candidate_col') ?></th>
+                    <th style="text-align:right;white-space:nowrap"><?= __('total_votes') ?></th>
+                    <th style="text-align:right;white-space:nowrap;color:#9a94b8">%</th>
+                    <th style="text-align:right;white-space:nowrap"><?= __('total_points') ?></th>
+                    <th style="text-align:right;white-space:nowrap;color:#9a94b8">%</th>
+                </tr>
+            </thead>
+            <tbody>
+            <?php foreach ($rows as $r):
+                $pctVotes  = $sumVotes  > 0 ? round($r['total_votes']  / $sumVotes  * 100, 1) : 0;
+                $pctPoints = $sumPoints > 0 ? round($r['total_points'] / $sumPoints * 100, 1) : 0;
+            ?>
+            <tr <?= $r['rank'] == 1 ? 'style="background:#f0fdf4;font-weight:700"' : '' ?>>
+                <td><?= $r['rank'] == 1 ? '<span style="color:#27ae60">&#9733;</span>' : '<span style="color:#9a94b8">' . $r['rank'] . '</span>' ?></td>
+                <td><?= htmlspecialchars($r['candidate_name']) ?></td>
+                <td style="text-align:right;white-space:nowrap;color:#6b6494"><?= $r['total_votes'] ?></td>
+                <td style="text-align:right;white-space:nowrap;color:#9a94b8;font-size:.82rem"><?= $pctVotes ?>%</td>
+                <td style="text-align:right;white-space:nowrap;color:var(--e-primary);font-weight:600"><?= $r['total_points'] ?></td>
+                <td style="text-align:right;white-space:nowrap;color:#9a94b8;font-size:.82rem"><?= $pctPoints ?>%</td>
+            </tr>
+            <?php endforeach ?>
+            </tbody>
+        </table>
     </div>
-</div>
-<script>
-(function(){
-    var ctx = document.getElementById('<?= $chartId ?>');
-    if (!ctx) return;
-    new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: <?= json_encode($labels, JSON_UNESCAPED_UNICODE) ?>,
-            datasets: [{
-                label: '<?= addslashes(__('total_points')) ?>',
-                data: <?= json_encode($values) ?>,
-                backgroundColor: <?= json_encode(array_map(fn($r) => $r['rank'] == 1 ? '#27ae60' : '#7B68EE', $rows)) ?>,
-                borderRadius: 6
-            }]
-        },
-        options: {
-            indexAxis: 'y', responsive: true,
-            plugins: { legend: { display: false } },
-            scales: {
-                x: { beginAtZero: true, grid: { color: '#f0eeff' } },
-                y: { grid: { display: false }, ticks: { font: { size: 11 } } }
+    <?php if (count($rows) <= 25): ?>
+    <div class="e-card uk-margin-small-top" style="padding:12px 16px">
+        <canvas id="<?= $chartId ?>" style="max-height:300px"></canvas>
+    </div>
+    <script>
+    (function(){
+        var ctx = document.getElementById('<?= $chartId ?>');
+        if (!ctx) return;
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: <?= json_encode($labels, JSON_UNESCAPED_UNICODE) ?>,
+                datasets: [{
+                    label: '<?= addslashes(__('total_points')) ?>',
+                    data: <?= json_encode($values) ?>,
+                    backgroundColor: <?= json_encode(array_map(fn($r) => $r['rank'] == 1 ? '#27ae60' : '#7B68EE', $rows)) ?>,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                indexAxis: 'y', responsive: true,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { beginAtZero: true, grid: { color: '#f0eeff' } },
+                    y: { grid: { display: false }, ticks: { font: { size: 11 } } }
+                }
             }
-        }
-    });
-})();
-</script>
+        });
+    })();
+    </script>
+    <?php endif ?>
+</div>
 <?php endforeach ?>
 <?php endif ?>
 
@@ -425,110 +459,102 @@ ob_start();
     </div>
 </div>
 
-<?php if (empty($dedupQueue)): ?>
+<?php if (empty($dedupGroups)): ?>
 <div class="e-card uk-text-center" style="padding:60px">
     <span uk-icon="icon:check;ratio:2" style="color:#27ae60"></span>
     <p style="color:#9a94b8;margin-top:12px"><?= __('no_dedup_pending') ?></p>
 </div>
-<?php else:
-    $currentCat = null;
-    foreach ($dedupQueue as $item):
-        if ($item['category_id'] !== $currentCat):
-            if ($currentCat !== null) echo '</div>';
-            $currentCat = $item['category_id'];
+<?php else: ?>
+
+<?php
+$currentCat = null;
+foreach ($dedupGroups as $group):
+    if ($group['category_id'] !== $currentCat):
+        if ($currentCat !== null) echo '</div>';
+        $currentCat = $group['category_id'];
 ?>
-<h3 style="font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--e-accent);margin:20px 0 8px">
-    <?= htmlspecialchars($item['category_name']) ?>
+<h3 style="font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--e-accent);margin:24px 0 8px">
+    <?= htmlspecialchars($group['category_name']) ?>
 </h3>
-<div>
+<div class="uk-grid-small" uk-grid>
 <?php endif ?>
 
-<div class="e-card uk-margin-small-bottom" style="border-left:4px solid <?= $item['similarity_score'] >= 85 ? '#e74c3c' : ($item['similarity_score'] >= 70 ? '#f39c12' : '#9a94b8') ?>;padding:16px 20px">
-    <div class="uk-grid-small" uk-grid>
+<div class="uk-width-1-1">
+<div class="e-card" style="border-left:4px solid <?= $group['max_score'] >= 85 ? '#e74c3c' : ($group['max_score'] >= 70 ? '#f39c12' : '#9a94b8') ?>">
+    <div class="uk-grid-small uk-flex-middle" uk-grid>
 
-        <div class="uk-width-1-3@m">
-            <p style="font-size:.68rem;text-transform:uppercase;letter-spacing:.07em;color:#9a94b8;margin:0 0 4px"><?= __('dedup_raw') ?></p>
-            <p style="font-size:.95rem;font-weight:700;margin:0 0 2px"><?= htmlspecialchars($item['new_cand_name'] ?? $item['raw_input']) ?></p>
-            <p style="font-size:.75rem;color:#9a94b8;margin:0">
-                <?= __('normalized_label') ?>: <code><?= htmlspecialchars($item['normalized_input']) ?></code>
+        <!-- Varianti -->
+        <div class="uk-width-2-5@m">
+            <p style="font-size:.7rem;text-transform:uppercase;letter-spacing:.07em;color:#9a94b8;margin:0 0 8px">
+                <?= count($group['items']) ?> <?= __('dedup_variants') ?>
             </p>
+            <?php foreach ($group['items'] as $item): ?>
+            <label style="display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:.875rem">
+                <input type="checkbox" class="e-group-item-check"
+                       form="grpr-<?= $group['items'][0]['id'] ?>"
+                       name="items[]"
+                       value="<?= $item['id'] ?>:<?= $item['new_cand_id'] ?? 0 ?>"
+                       checked>
+                <span>
+                    <strong><?= htmlspecialchars($item['raw_input']) ?></strong>
+                    <span style="color:#9a94b8;font-size:.78rem;margin-left:4px"><?= $item['similarity_score'] ?>%</span>
+                </span>
+            </label>
+            <?php endforeach ?>
         </div>
 
-        <div class="uk-width-1-6@m uk-text-center uk-flex uk-flex-middle uk-flex-center">
-            <div>
-                <div style="font-size:1.3rem;font-weight:800;color:<?= $item['similarity_score'] >= 85 ? '#e74c3c' : ($item['similarity_score'] >= 70 ? '#f39c12' : '#6b6494') ?>">
-                    <?= $item['similarity_score'] ?>%
-                </div>
-                <div style="font-size:.68rem;color:#9a94b8"><?= __('dedup_score') ?></div>
-            </div>
+        <!-- Freccia -->
+        <div class="uk-width-expand uk-text-center uk-visible@m">
+            <span uk-icon="icon:arrow-right;ratio:1.2" style="color:#9a94b8"></span>
         </div>
 
+        <!-- Target + azioni -->
         <div class="uk-width-1-2@m">
-            <p style="font-size:.68rem;text-transform:uppercase;letter-spacing:.07em;color:#9a94b8;margin:0 0 4px">
-                <?= __('dedup_suggestion') ?>
-            </p>
-            <?php if ($item['suggested_name']): ?>
-            <p style="font-size:.95rem;font-weight:600;margin:0 0 10px;color:var(--e-primary)">
-                <?= htmlspecialchars($item['suggested_name']) ?>
-            </p>
-            <?php else: ?>
-            <p style="color:#9a94b8;margin:0 0 10px;font-size:.875rem"><?= __('no_suggestion') ?></p>
-            <?php endif ?>
+            <form id="grpr-<?= $group['items'][0]['id'] ?>" method="post">
+                <?= Csrf::field() ?>
+                <input type="hidden" name="_action" value="merge_group">
+                <p style="font-size:.7rem;text-transform:uppercase;letter-spacing:.07em;color:#9a94b8;margin:0 0 6px">
+                    <?= __('dedup_suggestion') ?>
+                </p>
+                <div class="uk-margin-small-bottom">
+                    <select name="target_candidate_id" class="uk-select uk-form-small" style="width:100%;max-width:280px">
+                        <?php foreach ($candByCategory[$group['category_id']] ?? [] as $c): ?>
+                        <option value="<?= $c['id'] ?>"
+                            <?= $c['id'] == $group['suggested_candidate_id'] ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($c['name']) ?>
+                        </option>
+                        <?php endforeach ?>
+                    </select>
+                </div>
+                <div class="uk-margin-small-bottom">
+                    <input class="uk-input uk-form-small" type="text" name="canonical_override"
+                           placeholder="<?= htmlspecialchars(__('dedup_canonical_label')) ?>"
+                           style="width:100%;max-width:280px">
+                </div>
+                <button class="uk-button uk-button-primary uk-button-small" type="submit">
+                    <span uk-icon="icon:link;ratio:.8"></span> <?= __('dedup_merge_selected') ?>
+                </button>
+            </form>
 
-            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
-                <!-- Merge -->
-                <form method="post">
-                    <?= Csrf::field() ?>
-                    <input type="hidden" name="_action" value="merge">
-                    <input type="hidden" name="queue_id" value="<?= $item['id'] ?>">
-                    <input type="hidden" name="source_candidate_id" value="<?= $item['new_cand_id'] ?>">
-                    <div style="margin-bottom:6px">
-                        <select name="target_candidate_id" class="uk-select uk-form-small" style="width:210px">
-                            <?php foreach ($candByCategory[$item['category_id']] ?? [] as $c):
-                                if ($c['id'] == $item['new_cand_id']) continue; ?>
-                            <option value="<?= $c['id'] ?>" <?= $c['id'] == $item['suggested_candidate_id'] ? 'selected' : '' ?>>
-                                <?= htmlspecialchars($c['name']) ?>
-                            </option>
-                            <?php endforeach ?>
-                        </select>
-                    </div>
-                    <div style="margin-bottom:6px">
-                        <input class="uk-input uk-form-small" type="text" name="canonical_override"
-                               placeholder="<?= htmlspecialchars(__('canonical_custom_hint')) ?>" style="width:210px">
-                    </div>
-                    <button class="uk-button uk-button-primary uk-button-small">
-                        <span uk-icon="icon:link;ratio:.8"></span> <?= __('dedup_merge') ?>
-                    </button>
-                </form>
-
-                <!-- Keep -->
-                <form method="post">
-                    <?= Csrf::field() ?>
-                    <input type="hidden" name="_action" value="keep">
-                    <input type="hidden" name="queue_id" value="<?= $item['id'] ?>">
-                    <button class="uk-button uk-button-default uk-button-small"><?= __('dedup_keep') ?></button>
-                </form>
-
-                <!-- Exclude -->
-                <form method="post">
-                    <?= Csrf::field() ?>
-                    <input type="hidden" name="_action" value="exclude">
-                    <input type="hidden" name="queue_id" value="<?= $item['id'] ?>">
-                    <input type="hidden" name="candidate_id" value="<?= $item['new_cand_id'] ?>">
-                    <button class="uk-button uk-button-link uk-button-small"
-                            data-confirm="<?= htmlspecialchars(__('exclude_candidate_confirm')) ?>"
-                            style="color:#e74c3c">
-                        <?= __('dedup_exclude') ?>
-                    </button>
-                </form>
-            </div>
+            <form method="post" style="margin-top:6px">
+                <?= Csrf::field() ?>
+                <input type="hidden" name="_action" value="keep_group">
+                <?php foreach ($group['items'] as $item): ?>
+                <input type="hidden" name="queue_ids[]" value="<?= $item['id'] ?>">
+                <?php endforeach ?>
+                <button class="uk-button uk-button-default uk-button-small">
+                    <?= __('dedup_keep_all') ?>
+                </button>
+            </form>
         </div>
 
     </div>
 </div>
+</div>
 
 <?php endforeach ?>
 <?php if ($currentCat !== null) echo '</div>'; ?>
+
 <?php endif ?>
 
 <?php if (!empty($aliases)): ?>

@@ -29,6 +29,28 @@ $errors = [];
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     Csrf::check();
 
+    // Handle logo upload (takes precedence over URL field)
+    $logoUrl = trim($_POST['public_logo_url'] ?? '') ?: null;
+    if (!empty($_FILES['public_logo_file']['tmp_name'])) {
+        $file    = $_FILES['public_logo_file'];
+        $allowed = ['image/jpeg','image/png','image/gif','image/webp','image/svg+xml'];
+        if (!in_array($file['type'], $allowed, true)) {
+            $errors[] = 'Logo: formato non supportato (usa JPG, PNG, GIF, WEBP o SVG).';
+        } elseif ($file['size'] > 4 * 1024 * 1024) {
+            $errors[] = 'Logo: file troppo grande (max 4 MB).';
+        } else {
+            $ext     = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+            $fname   = 'logo_' . ($id ?: 'new') . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+            $dest    = __DIR__ . '/../assets/uploads/logos/' . $fname;
+            if (move_uploaded_file($file['tmp_name'], $dest)) {
+                $appUrl  = rtrim($config['app']['url'] ?? '', '/');
+                $logoUrl = $appUrl . '/assets/uploads/logos/' . $fname;
+            } else {
+                $errors[] = 'Logo: errore nel salvataggio del file.';
+            }
+        }
+    }
+
     $data = [
         'name'               => trim($_POST['name'] ?? ''),
         'slug'               => trim($_POST['slug'] ?? ''),
@@ -47,7 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'bg'        => trim($_POST['theme_bg']        ?? ''),
             'text'      => trim($_POST['theme_text']      ?? ''),
         ])) ?: null,
-        'public_logo_url'    => trim($_POST['public_logo_url']    ?? '') ?: null,
+        'public_logo_url'    => $logoUrl,
         'public_privacy_url' => trim($_POST['public_privacy_url'] ?? '') ?: null,
         'public_info_box'    => trim($_POST['public_info_box']    ?? '') ?: null,
     ];
@@ -109,7 +131,7 @@ ob_start();
 <?php endif ?>
 
 <div class="e-card">
-    <form method="post">
+    <form method="post" enctype="multipart/form-data">
         <?= Csrf::field() ?>
 
         <div class="uk-grid-medium" uk-grid>
@@ -131,7 +153,7 @@ ob_start();
             </div>
 
             <!-- Description (Quill rich text) -->
-            <div class="uk-width-1-1">
+            <div class="uk-width-1-1" style="padding-bottom:24px">
                 <label class="uk-form-label"><?= __('description') ?></label>
                 <div class="e-quill-editor" data-target="field-description"></div>
                 <input type="hidden" name="description" id="field-description"
@@ -186,6 +208,84 @@ ob_start();
 
             <hr class="uk-width-1-1">
 
+            <!-- Category terminology picker -->
+            <div class="uk-width-1-1">
+                <label class="uk-form-label" style="font-weight:700;font-size:.85rem">
+                    <?= __('cat_term_label') ?>
+                </label>
+                <p style="font-size:.78rem;color:#9a94b8;margin:2px 0 10px">
+                    <?= __('cat_term_desc') ?>
+                </p>
+                <div style="display:flex;flex-wrap:wrap;gap:6px">
+                <?php foreach (CatTerm::PRESETS as $ctKey => $ctPal):
+                    $ctSel = ($event['cat_term'] ?? CatTerm::DEFAULT_PRESET) === $ctKey;
+                ?>
+                <label class="e-ctlabel" style="display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;
+                              border:2px solid <?= $ctSel ? 'var(--e-primary)' : '#e8e6f0' ?>;cursor:pointer;
+                              background:<?= $ctSel ? '#f5f3ff' : '#fff' ?>;transition:border-color .1s;white-space:nowrap"
+                       onclick="document.querySelectorAll('.e-ctlabel').forEach(function(l){l.style.borderColor='#e8e6f0';l.style.background='#fff'});this.style.borderColor='var(--e-primary)';this.style.background='#f5f3ff'">
+                    <input type="radio" name="cat_term" value="<?= $ctKey ?>"
+                           class="uk-radio" <?= $ctSel ? 'checked' : '' ?>>
+                    <span style="font-size:.8rem;font-weight:600;color:var(--e-text)">
+                        <?php $ctL = $ctPal[\Electus\Core\Lang::current()] ?? $ctPal['it']; ?>
+                        <?= htmlspecialchars($ctL['s']) ?> / <?= htmlspecialchars($ctL['p']) ?>
+                    </span>
+                </label>
+                <?php endforeach ?>
+                </div>
+            </div>
+
+            <hr class="uk-width-1-1">
+
+            <!-- Logo (upload + URL fallback) -->
+            <div class="uk-width-1-2@m">
+                <label class="uk-form-label"><?= __('public_logo_url_label') ?> <span style="color:#9a94b8">(<?= __('optional') ?>)</span></label>
+                <?php if (!empty($event['public_logo_url'])): ?>
+                <div style="margin-bottom:8px;display:flex;align-items:center;gap:10px">
+                    <img src="<?= htmlspecialchars($event['public_logo_url']) ?>" alt="logo"
+                         style="max-height:48px;max-width:120px;object-fit:contain;border-radius:4px;border:1px solid #e8e6f0">
+                    <span style="font-size:.75rem;color:#9a94b8">Logo attuale</span>
+                </div>
+                <?php endif ?>
+                <div style="display:flex;flex-direction:column;gap:6px">
+                    <label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:2px dashed #d0cbe8;border-radius:8px;cursor:pointer;font-size:.8rem;color:#6b6494;background:#faf9ff"
+                           for="logo-file-input">
+                        <span uk-icon="icon:cloud-upload;ratio:.9" style="color:var(--e-primary);flex-shrink:0"></span>
+                        <span id="logo-file-label">Carica immagine dal disco (JPG, PNG, SVG — max 4 MB)</span>
+                    </label>
+                    <input type="file" id="logo-file-input" name="public_logo_file"
+                           accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml"
+                           style="display:none"
+                           onchange="document.getElementById('logo-file-label').textContent = this.files[0]?.name || 'Carica immagine dal disco'">
+                    <div style="display:flex;align-items:center;gap:6px">
+                        <div style="height:1px;flex:1;background:#e8e6f0"></div>
+                        <span style="font-size:.72rem;color:#9a94b8">oppure URL</span>
+                        <div style="height:1px;flex:1;background:#e8e6f0"></div>
+                    </div>
+                    <input class="uk-input uk-form-small" type="url" name="public_logo_url"
+                           placeholder="https://..."
+                           value="<?= htmlspecialchars($event['public_logo_url'] ?? '') ?>">
+                </div>
+            </div>
+
+            <!-- Privacy policy URL -->
+            <div class="uk-width-1-2@m">
+                <label class="uk-form-label"><?= __('public_privacy_url_label') ?> <span style="color:#9a94b8">(<?= __('optional') ?>)</span></label>
+                <input class="uk-input" type="url" name="public_privacy_url"
+                       placeholder="https://..."
+                       value="<?= htmlspecialchars($event['public_privacy_url'] ?? '') ?>">
+            </div>
+
+            <!-- Info box (Quill) -->
+            <div class="uk-width-1-1" style="padding-bottom:24px">
+                <label class="uk-form-label"><?= __('public_info_box_label') ?> <span style="color:#9a94b8">(<?= __('optional') ?>)</span></label>
+                <div class="e-quill-editor" data-target="field-public-info-box"></div>
+                <input type="hidden" name="public_info_box" id="field-public-info-box"
+                       value="<?= htmlspecialchars($event['public_info_box'] ?? '') ?>">
+            </div>
+
+            <hr class="uk-width-1-1">
+
             <!-- Results public -->
             <div class="uk-width-1-1">
                 <label>
@@ -205,7 +305,7 @@ ob_start();
                 <label class="uk-form-label" style="font-weight:700;font-size:.85rem">
                     Tema grafico pagine pubbliche
                 </label>
-                <p style="font-size:.78rem;color:#9a94b8;margin:2px 0 12px">
+                <p style="font-size:.78rem;color:#9a94b8;margin:2px 0 10px">
                     Palette applicata alla scheda di voto e ai risultati che vedono i votanti.
                 </p>
                 <?php
@@ -215,42 +315,33 @@ ob_start();
                     : [];
                 ?>
                 <input type="hidden" name="theme_preset" id="ev_theme_input" value="<?= htmlspecialchars($currentPreset ?? '') ?>">
-                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">
+                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:6px;margin-bottom:10px">
                 <?php foreach (Theme::PALETTES as $key => $pal):
                     $sel = ($currentPreset === $key);
                 ?>
                 <div class="e-ptc" data-key="<?= $key ?>" onclick="selectEvTheme('<?= $key ?>')"
                      style="border:2px solid <?= $sel ? 'var(--e-primary)' : '#e8e6f0' ?>;
-                            border-radius:10px;overflow:hidden;cursor:pointer;background:#fff;
+                            border-radius:8px;overflow:hidden;cursor:pointer;
                             box-shadow:<?= $sel ? '0 0 0 3px rgba(76,61,158,.12)' : 'none' ?>">
-                    <!-- Colour strip -->
-                    <div style="height:36px;background:<?= htmlspecialchars($pal['bg']) ?>">
-                        <div style="height:10px;background:<?= htmlspecialchars($pal['primary']) ?>"></div>
-                        <div style="padding:3px 6px;display:flex;gap:3px;align-items:center">
-                            <div style="height:3px;border-radius:2px;flex:2;background:<?= htmlspecialchars($pal['primary']) ?>;opacity:.5"></div>
-                            <div style="height:3px;border-radius:2px;flex:1;background:<?= htmlspecialchars($pal['accent']) ?>;opacity:.6"></div>
+                    <!-- Square colour preview -->
+                    <div style="aspect-ratio:1;background:<?= htmlspecialchars($pal['bg']) ?>;position:relative;padding:7px;display:flex;flex-direction:column;justify-content:space-between">
+                        <div style="height:4px;border-radius:3px;background:<?= htmlspecialchars($pal['primary']) ?>"></div>
+                        <div style="display:flex;gap:3px;align-items:flex-end">
+                            <div style="height:22px;flex:3;border-radius:3px;background:<?= htmlspecialchars($pal['primary']) ?>"></div>
+                            <div style="height:14px;flex:2;border-radius:3px;background:<?= htmlspecialchars($pal['accent']) ?>"></div>
+                            <div style="height:9px;flex:2;border-radius:3px;background:<?= htmlspecialchars($pal['secondary']) ?>;opacity:.7"></div>
                         </div>
-                        <div style="padding:0 6px;display:flex;gap:3px">
-                            <div style="height:10px;width:18px;border-radius:3px;background:<?= htmlspecialchars($pal['primary']) ?>"></div>
-                            <div style="height:10px;width:14px;border-radius:3px;background:<?= htmlspecialchars($pal['accent']) ?>"></div>
-                        </div>
-                    </div>
-                    <!-- Label row -->
-                    <div style="padding:5px 7px;display:flex;align-items:center;gap:4px">
-                        <div style="display:flex;gap:3px;flex:1">
-                            <div style="width:10px;height:10px;border-radius:50%;background:<?= htmlspecialchars($pal['primary']) ?>"></div>
-                            <div style="width:10px;height:10px;border-radius:50%;background:<?= htmlspecialchars($pal['secondary']) ?>"></div>
-                            <div style="width:10px;height:10px;border-radius:50%;background:<?= htmlspecialchars($pal['accent']) ?>"></div>
-                        </div>
+                        <div style="height:4px;border-radius:2px;background:<?= htmlspecialchars($pal['primary']) ?>;opacity:.25"></div>
                         <?php if ($sel): ?>
-                        <div id="ev_check_<?= $key ?>" style="width:14px;height:14px;border-radius:50%;background:var(--e-primary);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                        <div id="ev_check_<?= $key ?>" style="position:absolute;top:4px;right:4px;width:14px;height:14px;border-radius:50%;background:var(--e-primary);display:flex;align-items:center;justify-content:center">
                             <span style="color:#fff;font-size:8px;font-weight:800">✓</span>
                         </div>
                         <?php else: ?>
-                        <div id="ev_check_<?= $key ?>" style="width:14px;height:14px;border-radius:50%;border:2px solid #e0ddf0;flex-shrink:0"></div>
+                        <div id="ev_check_<?= $key ?>" style="position:absolute;top:4px;right:4px;width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,255,255,.5)"></div>
                         <?php endif ?>
                     </div>
-                    <div style="padding:0 7px 6px;font-size:.7rem;font-weight:600;color:#2d2a40;line-height:1.2">
+                    <!-- Label -->
+                    <div style="padding:3px 5px 4px;font-size:.65rem;font-weight:600;color:#2d2a40;line-height:1.2;text-align:center;background:#fff">
                         <?= htmlspecialchars($pal['label']) ?>
                     </div>
                 </div>
@@ -267,7 +358,7 @@ ob_start();
                         var chk = document.getElementById('ev_check_' + k);
                         if (!chk) return;
                         chk.style.background = s ? 'var(--e-primary)' : 'transparent';
-                        chk.style.border     = s ? 'none' : '2px solid #e0ddf0';
+                        chk.style.border     = s ? 'none' : '2px solid rgba(255,255,255,.5)';
                         chk.innerHTML        = s ? '<span style="color:#fff;font-size:8px;font-weight:800">✓</span>' : '';
                     });
                 }
@@ -296,76 +387,6 @@ ob_start();
                         <?php endforeach ?>
                     </div>
                 </details>
-            </div>
-
-        </div>
-
-        <hr>
-
-        <!-- Category terminology picker -->
-        <div class="uk-grid-medium" uk-grid>
-            <div class="uk-width-1-1">
-                <label class="uk-form-label" style="font-weight:700;font-size:.85rem">
-                    <?= __('cat_term_label') ?>
-                </label>
-                <p style="font-size:.78rem;color:#9a94b8;margin:2px 0 12px">
-                    <?= __('cat_term_desc') ?>
-                </p>
-                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:520px">
-                <?php foreach (CatTerm::PRESETS as $ctKey => $ctPal):
-                    $ctSel = ($event['cat_term'] ?? CatTerm::DEFAULT_PRESET) === $ctKey;
-                ?>
-                <label class="e-ctlabel" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;
-                              border:2px solid <?= $ctSel ? 'var(--e-primary)' : '#e8e6f0' ?>;cursor:pointer;
-                              background:<?= $ctSel ? '#f5f3ff' : '#fff' ?>;transition:border-color .1s"
-                       onclick="document.querySelectorAll('.e-ctlabel').forEach(function(l){l.style.borderColor='#e8e6f0';l.style.background='#fff'});this.style.borderColor='var(--e-primary)';this.style.background='#f5f3ff'">
-                    <input type="radio" name="cat_term" value="<?= $ctKey ?>"
-                           class="uk-radio" <?= $ctSel ? 'checked' : '' ?>>
-                    <span style="font-size:.8rem;font-weight:600;color:var(--e-text)">
-                        <?php $ctL = $ctPal[\Electus\Core\Lang::current()] ?? $ctPal['it']; ?>
-                        <?= htmlspecialchars($ctL['s']) ?> / <?= htmlspecialchars($ctL['p']) ?>
-                    </span>
-                </label>
-                <?php endforeach ?>
-                </div>
-            </div>
-        </div>
-
-        <hr style="margin:28px 0 20px">
-
-        <!-- ── Pagina pubblica ───────────────────────────────────────────── -->
-        <h3 style="font-size:.9rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;
-                   color:var(--e-accent);margin-bottom:4px">
-            <?= __('public_page_section') ?>
-        </h3>
-        <p style="font-size:.8rem;color:#9a94b8;margin-bottom:20px">
-            <?= __('public_page_event_desc') ?>
-        </p>
-
-        <div class="uk-grid-medium" uk-grid>
-
-            <!-- Logo URL -->
-            <div class="uk-width-1-2@m">
-                <label class="uk-form-label"><?= __('public_logo_url_label') ?> <span style="color:#9a94b8">(<?= __('optional') ?>)</span></label>
-                <input class="uk-input" type="url" name="public_logo_url"
-                       placeholder="https://..."
-                       value="<?= htmlspecialchars($event['public_logo_url'] ?? '') ?>">
-            </div>
-
-            <!-- Privacy policy URL -->
-            <div class="uk-width-1-2@m">
-                <label class="uk-form-label"><?= __('public_privacy_url_label') ?> <span style="color:#9a94b8">(<?= __('optional') ?>)</span></label>
-                <input class="uk-input" type="url" name="public_privacy_url"
-                       placeholder="https://..."
-                       value="<?= htmlspecialchars($event['public_privacy_url'] ?? '') ?>">
-            </div>
-
-            <!-- Info box (Quill) -->
-            <div class="uk-width-1-1">
-                <label class="uk-form-label"><?= __('public_info_box_label') ?> <span style="color:#9a94b8">(<?= __('optional') ?>)</span></label>
-                <div class="e-quill-editor" data-target="field-public-info-box"></div>
-                <input type="hidden" name="public_info_box" id="field-public-info-box"
-                       value="<?= htmlspecialchars($event['public_info_box'] ?? '') ?>">
             </div>
 
         </div>

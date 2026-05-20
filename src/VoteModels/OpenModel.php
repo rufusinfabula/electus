@@ -57,6 +57,7 @@ class OpenModel implements VoteModelInterface
 
     private static function findOrCreateCandidate(int $roundId, int $categoryId, string $rawName): ?int
     {
+        $rawName    = Candidate::sanitizeName($rawName);
         $normalized = Candidate::normalize($rawName);
         $pdo        = Database::get();
 

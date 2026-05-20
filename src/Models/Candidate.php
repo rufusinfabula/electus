@@ -42,6 +42,7 @@ class Candidate
 
     public static function create(int $roundId, int $categoryId, string $name, string $source = 'manual'): int
     {
+        $name          = self::sanitizeName($name);
         $pdo           = Database::get();
         $canonicalName = self::normalize($name);
         $stmt          = $pdo->prepare(
@@ -53,6 +54,7 @@ class Candidate
 
     public static function update(int $id, string $name): void
     {
+        $name          = self::sanitizeName($name);
         $pdo           = Database::get();
         $canonicalName = self::normalize($name);
         $stmt          = $pdo->prepare('UPDATE candidates SET name = ?, canonical_name = ? WHERE id = ?');
@@ -71,6 +73,15 @@ class Candidate
         $pdo  = Database::get();
         $stmt = $pdo->prepare('DELETE FROM candidates WHERE id = ?');
         $stmt->execute([$id]);
+    }
+
+    // Strip http(s):// protocol (and optional www.) and force UPPERCASE.
+    // Applied at every entry point before storing a candidate name.
+    public static function sanitizeName(string $input): string
+    {
+        // Handle https:// http:// https// http// (colon optional, common typo)
+        $s = preg_replace('#^https?:?//(www\.)?#i', '', trim($input));
+        return mb_strtoupper(trim($s));
     }
 
     // Normalize for deduplication: lowercase, strip leading articles, strip punctuation

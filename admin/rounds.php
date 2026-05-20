@@ -73,6 +73,14 @@ $stmt->execute([$eventId]);
 $categoriesCount = (int) $stmt->fetchColumn();
 
 $stmt = $pdo->prepare(
+    "SELECT COUNT(DISTINCT c.id) FROM candidates c
+     JOIN event_rounds er ON er.id = c.round_id
+     WHERE er.event_id = ? AND c.status = 'active'"
+);
+$stmt->execute([$eventId]);
+$uniqueCandidates = (int) $stmt->fetchColumn();
+
+$stmt = $pdo->prepare(
     "SELECT COUNT(*) FROM dedup_queue dq
      JOIN event_rounds r ON r.id = dq.round_id
      WHERE r.event_id = ? AND dq.status = 'pending'"
@@ -142,6 +150,12 @@ ob_start();
         <div class="e-stat" style="min-width:110px">
             <div class="e-stat-value"><?= $categoriesCount ?></div>
             <div class="e-stat-label"><?= $catTermP ?></div>
+        </div>
+    </div>
+    <div class="uk-width-auto">
+        <div class="e-stat" style="min-width:110px">
+            <div class="e-stat-value" style="color:var(--e-accent)"><?= $uniqueCandidates ?></div>
+            <div class="e-stat-label"><?= __('stat_unique_candidates') ?></div>
         </div>
     </div>
     <div class="uk-width-auto">
