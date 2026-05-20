@@ -36,19 +36,29 @@ class Round
         return $row ?: null;
     }
 
+    private static function sanitizeHtml(?string $html): ?string
+    {
+        if ($html === null || $html === '') return null;
+        $clean = strip_tags($html, '<p><br><strong><em><u><ul><ol><li><a><h2><h3><blockquote>');
+        return $clean === '' ? null : $clean;
+    }
+
     public static function create(int $eventId, array $data): int
     {
         $pdo  = Database::get();
         $stmt = $pdo->prepare(
             'INSERT INTO event_rounds
-             (event_id, round_number, label, model, status, opens_at, closes_at,
-              config, parent_round_id, top_n_to_promote)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+             (event_id, round_number, label, public_description, public_instructions, public_info_box,
+              model, status, opens_at, closes_at, config, parent_round_id, top_n_to_promote)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         );
         $stmt->execute([
             $eventId,
             (int) $data['round_number'],
             $data['label'] ?? null,
+            self::sanitizeHtml($data['public_description'] ?? null),
+            self::sanitizeHtml($data['public_instructions'] ?? null),
+            self::sanitizeHtml($data['public_info_box'] ?? null),
             $data['model'],
             $data['status'],
             $data['opens_at'] ?: null,
@@ -65,7 +75,8 @@ class Round
         $pdo  = Database::get();
         $stmt = $pdo->prepare(
             'UPDATE event_rounds SET
-             round_number = ?, label = ?, model = ?, status = ?,
+             round_number = ?, label = ?, public_description = ?, public_instructions = ?,
+             public_info_box = ?, model = ?, status = ?,
              opens_at = ?, closes_at = ?, config = ?,
              parent_round_id = ?, top_n_to_promote = ?
              WHERE id = ?'
@@ -73,6 +84,9 @@ class Round
         $stmt->execute([
             (int) $data['round_number'],
             $data['label'] ?? null,
+            self::sanitizeHtml($data['public_description'] ?? null),
+            self::sanitizeHtml($data['public_instructions'] ?? null),
+            self::sanitizeHtml($data['public_info_box'] ?? null),
             $data['model'],
             $data['status'],
             $data['opens_at'] ?: null,

@@ -28,6 +28,12 @@ ob_start();
     <h2 style="font-size:1.4rem;font-weight:700;color:#27ae60;margin-bottom:8px">
         <?= __('vote_confirmed') ?>
     </h2>
+    <p style="color:#6b6494;margin-bottom:8px;font-size:.9rem">
+        <?= __('vote_anonymous_note') ?>
+    </p>
+    <p style="color:#9a94b8;margin-bottom:24px;font-size:.85rem">
+        <?= __('vote_final_note') ?>
+    </p>
     <?php endif ?>
 
     <?php if ($event): ?>
@@ -36,7 +42,7 @@ ob_start();
     </p>
     <?php if ($event['results_public']): ?>
     <a href="/vote/results.php?slug=<?= urlencode($slug) ?>" class="uk-button uk-button-default">
-        View results
+        <?= __('view_results') ?>
     </a>
     <?php endif ?>
     <?php endif ?>

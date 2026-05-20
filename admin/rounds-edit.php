@@ -48,15 +48,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $statuses = ['draft','active','closed'];
 
     $data = [
-        'round_number'     => (int) ($_POST['round_number'] ?? 1),
-        'label'            => trim($_POST['label'] ?? ''),
-        'model'            => $_POST['model'] ?? 'single',
-        'status'           => $_POST['status'] ?? 'draft',
-        'opens_at'         => trim($_POST['opens_at'] ?? ''),
-        'closes_at'        => trim($_POST['closes_at'] ?? ''),
-        'parent_round_id'  => (int) ($_POST['parent_round_id'] ?? 0) ?: null,
-        'top_n_to_promote' => (int) ($_POST['top_n_to_promote'] ?? 0) ?: null,
-        'config'           => [],
+        'round_number'       => (int) ($_POST['round_number'] ?? 1),
+        'label'              => trim($_POST['label'] ?? ''),
+        'model'              => $_POST['model'] ?? 'single',
+        'status'             => $_POST['status'] ?? 'draft',
+        'opens_at'           => trim($_POST['opens_at'] ?? ''),
+        'closes_at'          => trim($_POST['closes_at'] ?? ''),
+        'parent_round_id'    => (int) ($_POST['parent_round_id'] ?? 0) ?: null,
+        'top_n_to_promote'   => (int) ($_POST['top_n_to_promote'] ?? 0) ?: null,
+        'public_description' => trim($_POST['public_description']  ?? '') ?: null,
+        'public_instructions'=> trim($_POST['public_instructions'] ?? '') ?: null,
+        'public_info_box'    => trim($_POST['public_info_box']     ?? '') ?: null,
+        'config'             => [],
     ];
 
     if (!in_array($data['model'], $models, true))   $errors[] = 'Invalid voting model.';
@@ -126,6 +129,7 @@ $pageTitle      = $round ? __('round_edit') : __('round_new');
 $activeMenu     = 'rounds';
 $currentEventId = $eventId;
 $currentRoundId = $roundId ?: null;
+$useQuill       = true;
 
 ob_start();
 ?>
@@ -357,6 +361,44 @@ ob_start();
             <input class="uk-input" type="number" name="config_seats" min="1"
                    value="<?= $cfg['seats'] ?? 10 ?>">
         </div>
+    </div>
+
+    <!-- ── Pagina pubblica del turno ────────────────────────────────────── -->
+    <hr style="margin:28px 0 20px">
+    <h3 style="font-size:.9rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;
+               color:var(--e-accent);margin-bottom:4px">
+        <?= __('public_page_section') ?>
+    </h3>
+    <p style="font-size:.8rem;color:#9a94b8;margin-bottom:20px">
+        <?= __('public_page_round_desc') ?>
+    </p>
+
+    <div class="uk-grid-medium" uk-grid>
+
+        <!-- Descrizione turno (Quill) -->
+        <div class="uk-width-1-1">
+            <label class="uk-form-label"><?= __('public_description_label') ?> <span style="color:#9a94b8">(<?= __('optional') ?>)</span></label>
+            <div class="e-quill-editor" data-target="field-public-description"></div>
+            <input type="hidden" name="public_description" id="field-public-description"
+                   value="<?= htmlspecialchars($round['public_description'] ?? '') ?>">
+        </div>
+
+        <!-- Istruzioni di voto (Quill) -->
+        <div class="uk-width-1-1">
+            <label class="uk-form-label"><?= __('public_instructions_label') ?> <span style="color:#9a94b8">(<?= __('optional') ?>)</span></label>
+            <div class="e-quill-editor" data-target="field-public-instructions"></div>
+            <input type="hidden" name="public_instructions" id="field-public-instructions"
+                   value="<?= htmlspecialchars($round['public_instructions'] ?? '') ?>">
+        </div>
+
+        <!-- Box informativo (Quill) -->
+        <div class="uk-width-1-1">
+            <label class="uk-form-label"><?= __('public_info_box_label') ?> <span style="color:#9a94b8">(<?= __('optional') ?>)</span></label>
+            <div class="e-quill-editor" data-target="field-public-info-box"></div>
+            <input type="hidden" name="public_info_box" id="field-public-info-box"
+                   value="<?= htmlspecialchars($round['public_info_box'] ?? '') ?>">
+        </div>
+
     </div>
 
     <div class="uk-margin-top uk-flex" style="gap:12px">

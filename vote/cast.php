@@ -113,14 +113,52 @@ $pageTitle = __('vote_title') . ' — ' . htmlspecialchars($event['name']);
 
 ob_start();
 ?>
+<?php
+// Step indicator: shown only for registration-based flows
+$__showSteps = $requiresToken;
+$__hasEmailVerif = (bool) $event['email_verification'];
+?>
+
+<?php if ($__showSteps): ?>
+<div class="e-vote-steps">
+    <div class="e-vote-step done"><?= __('vote_step_register') ?></div>
+    <?php if ($__hasEmailVerif): ?>
+    <div class="e-vote-step done"><?= __('vote_step_verify') ?></div>
+    <?php endif ?>
+    <div class="e-vote-step active"><?= __('vote_step_vote') ?></div>
+    <div class="e-vote-step"><?= __('vote_step_confirm') ?></div>
+</div>
+<?php endif ?>
+
 <h1 style="font-size:1.4rem;font-weight:800;margin-bottom:4px">
     <?= htmlspecialchars($event['name']) ?>
 </h1>
-<p style="color:#9a94b8;margin-bottom:24px;font-size:.875rem">
+<p style="color:#9a94b8;margin-bottom:16px;font-size:.875rem">
     <?= __('round_number') ?><?= $round['round_number'] ?>
     <?= $round['label'] ? '— ' . htmlspecialchars($round['label']) : '' ?>
     · <?= __('model_' . $round['model']) ?>
 </p>
+
+<?php if (!empty($round['public_description'])): ?>
+<div class="e-public-description"><?= $round['public_description'] ?></div>
+<?php endif ?>
+
+<?php if (!empty($round['closes_at'])): ?>
+<div class="e-public-deadline">
+    <span uk-icon="icon:clock;ratio:.9"></span>
+    <?= __('voting_closes_at') ?>: <strong><?= htmlspecialchars(date('d/m/Y H:i', strtotime($round['closes_at']))) ?></strong>
+</div>
+<?php endif ?>
+
+<?php if (!empty($round['public_instructions'])): ?>
+<div class="e-public-instructions uk-alert" uk-alert>
+    <?= $round['public_instructions'] ?>
+</div>
+<?php endif ?>
+
+<?php if (!empty($round['public_info_box'])): ?>
+<div class="e-public-infobox"><?= $round['public_info_box'] ?></div>
+<?php endif ?>
 
 <?php if ($errors): ?>
 <div class="uk-alert-danger" uk-alert>
@@ -143,6 +181,12 @@ ob_start();
         </button>
     </div>
 </form>
+
+<script>
+document.getElementById('vote-form').addEventListener('submit', function(e) {
+    if (!confirm(<?= json_encode(__('vote_confirm_submit')) ?>)) e.preventDefault();
+});
+</script>
 <?php
 $content = ob_get_clean();
 require ROOT . '/templates/public/layout.php';

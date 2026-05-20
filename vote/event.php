@@ -116,11 +116,36 @@ ob_start();
 ?>
 <div style="max-width:520px;margin:0 auto">
 
+    <?php if (!empty($event['public_logo_url'])): ?>
+    <div class="e-public-logo-event">
+        <img src="<?= htmlspecialchars($event['public_logo_url']) ?>"
+             alt="<?= htmlspecialchars($event['name']) ?>">
+    </div>
+    <?php endif ?>
+
     <h1 style="font-size:1.6rem;font-weight:800;color:var(--e-text);margin-bottom:8px">
         <?= htmlspecialchars($event['name']) ?>
     </h1>
-    <?php if ($event['description']): ?>
-    <p style="color:#6b6494;margin-bottom:28px"><?= nl2br(htmlspecialchars($event['description'])) ?></p>
+
+    <?php if (!empty($event['description'])): ?>
+    <div class="e-public-description"><?= $event['description'] ?></div>
+    <?php endif ?>
+
+    <?php if (!empty($event['public_info_box'])): ?>
+    <div class="e-public-infobox uk-alert-primary" uk-alert>
+        <?= $event['public_info_box'] ?>
+    </div>
+    <?php endif ?>
+
+    <?php if ($accessMode !== 'anonymous'): ?>
+    <p class="e-gdpr-notice">
+        <?= __('gdpr_notice') ?>
+        <?php if (!empty($event['public_privacy_url'])): ?>
+        <a href="<?= htmlspecialchars($event['public_privacy_url']) ?>" target="_blank" rel="noopener">
+            <?= __('privacy_policy') ?>
+        </a>
+        <?php endif ?>
+    </p>
     <?php endif ?>
 
     <?php if (!$round): ?>

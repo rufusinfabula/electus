@@ -47,6 +47,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'bg'        => trim($_POST['theme_bg']        ?? ''),
             'text'      => trim($_POST['theme_text']      ?? ''),
         ])) ?: null,
+        'public_logo_url'    => trim($_POST['public_logo_url']    ?? '') ?: null,
+        'public_privacy_url' => trim($_POST['public_privacy_url'] ?? '') ?: null,
+        'public_info_box'    => trim($_POST['public_info_box']    ?? '') ?: null,
     ];
 
     // Validation
@@ -87,6 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $pageTitle     = $event ? __('event_edit') : __('event_new');
 $activeMenu    = 'events';
 $currentEventId = $id ?: null;
+$useQuill      = true;
 
 $accessModes   = ['anonymous','voluntary_registration','mandatory_registration','closed_list','registration_with_approval'];
 $statuses      = ['draft','active','closed','archived'];
@@ -126,11 +130,12 @@ ob_start();
                        pattern="[a-z0-9-]+" title="Lowercase letters, numbers and hyphens only">
             </div>
 
-            <!-- Description -->
+            <!-- Description (Quill rich text) -->
             <div class="uk-width-1-1">
                 <label class="uk-form-label"><?= __('description') ?></label>
-                <textarea class="uk-textarea" name="description" rows="3"
-                ><?= htmlspecialchars($event['description'] ?? '') ?></textarea>
+                <div class="e-quill-editor" data-target="field-description"></div>
+                <input type="hidden" name="description" id="field-description"
+                       value="<?= htmlspecialchars($event['description'] ?? '') ?>">
             </div>
 
             <!-- Type -->
@@ -324,6 +329,45 @@ ob_start();
                 <?php endforeach ?>
                 </div>
             </div>
+        </div>
+
+        <hr style="margin:28px 0 20px">
+
+        <!-- ── Pagina pubblica ───────────────────────────────────────────── -->
+        <h3 style="font-size:.9rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;
+                   color:var(--e-accent);margin-bottom:4px">
+            <?= __('public_page_section') ?>
+        </h3>
+        <p style="font-size:.8rem;color:#9a94b8;margin-bottom:20px">
+            <?= __('public_page_event_desc') ?>
+        </p>
+
+        <div class="uk-grid-medium" uk-grid>
+
+            <!-- Logo URL -->
+            <div class="uk-width-1-2@m">
+                <label class="uk-form-label"><?= __('public_logo_url_label') ?> <span style="color:#9a94b8">(<?= __('optional') ?>)</span></label>
+                <input class="uk-input" type="url" name="public_logo_url"
+                       placeholder="https://..."
+                       value="<?= htmlspecialchars($event['public_logo_url'] ?? '') ?>">
+            </div>
+
+            <!-- Privacy policy URL -->
+            <div class="uk-width-1-2@m">
+                <label class="uk-form-label"><?= __('public_privacy_url_label') ?> <span style="color:#9a94b8">(<?= __('optional') ?>)</span></label>
+                <input class="uk-input" type="url" name="public_privacy_url"
+                       placeholder="https://..."
+                       value="<?= htmlspecialchars($event['public_privacy_url'] ?? '') ?>">
+            </div>
+
+            <!-- Info box (Quill) -->
+            <div class="uk-width-1-1">
+                <label class="uk-form-label"><?= __('public_info_box_label') ?> <span style="color:#9a94b8">(<?= __('optional') ?>)</span></label>
+                <div class="e-quill-editor" data-target="field-public-info-box"></div>
+                <input type="hidden" name="public_info_box" id="field-public-info-box"
+                       value="<?= htmlspecialchars($event['public_info_box'] ?? '') ?>">
+            </div>
+
         </div>
 
         <div class="uk-margin-top uk-flex" style="gap:12px">

@@ -36,19 +36,30 @@ class Event
         return $stmt->fetch() ?: null;
     }
 
+    private static function sanitizeHtml(?string $html): ?string
+    {
+        if ($html === null || $html === '') return null;
+        $clean = strip_tags($html, '<p><br><strong><em><u><ul><ol><li><a><h2><h3><blockquote>');
+        return $clean === '' ? null : $clean;
+    }
+
     public static function create(array $data, int $createdBy): int
     {
         $pdo  = Database::get();
         $stmt = $pdo->prepare(
             'INSERT INTO events
-             (name, slug, description, type, access_mode, email_verification,
+             (name, slug, description, public_logo_url, public_privacy_url, public_info_box,
+              type, access_mode, email_verification,
               results_public, theme_preset, theme_colors, cat_term, status, created_by)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         );
         $stmt->execute([
             $data['name'],
             $data['slug'],
-            $data['description'] ?? null,
+            self::sanitizeHtml($data['description'] ?? null),
+            $data['public_logo_url'] ?? null,
+            $data['public_privacy_url'] ?? null,
+            self::sanitizeHtml($data['public_info_box'] ?? null),
             $data['type'],
             $data['access_mode'],
             (int) ($data['email_verification'] ?? 0),
@@ -67,7 +78,8 @@ class Event
         $pdo  = Database::get();
         $stmt = $pdo->prepare(
             'UPDATE events SET
-             name = ?, slug = ?, description = ?, type = ?, access_mode = ?,
+             name = ?, slug = ?, description = ?, public_logo_url = ?, public_privacy_url = ?,
+             public_info_box = ?, type = ?, access_mode = ?,
              email_verification = ?, results_public = ?, theme_preset = ?, theme_colors = ?,
              cat_term = ?, status = ?
              WHERE id = ?'
@@ -75,7 +87,10 @@ class Event
         $stmt->execute([
             $data['name'],
             $data['slug'],
-            $data['description'] ?? null,
+            self::sanitizeHtml($data['description'] ?? null),
+            $data['public_logo_url'] ?? null,
+            $data['public_privacy_url'] ?? null,
+            self::sanitizeHtml($data['public_info_box'] ?? null),
             $data['type'],
             $data['access_mode'],
             (int) ($data['email_verification'] ?? 0),

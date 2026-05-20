@@ -11,6 +11,9 @@
     $__adminPal   = \Electus\Core\Theme::PALETTES[$__adminTheme] ?? \Electus\Core\Theme::PALETTES[\Electus\Core\Theme::DEFAULT_PRESET];
     echo \Electus\Core\Theme::cssBlock($__adminPal);
     ?>
+    <?php if (!empty($useQuill)): ?>
+    <link href="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.snow.css" rel="stylesheet">
+    <?php endif ?>
 </head>
 <body>
 
@@ -197,5 +200,29 @@
 <script src="https://cdn.jsdelivr.net/npm/uikit@3/dist/js/uikit-icons.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <script src="/assets/js/admin.js"></script>
+<?php if (!empty($useQuill)): ?>
+<script src="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.js"></script>
+<script>
+document.querySelectorAll('.e-quill-editor').forEach(function(container) {
+    var input = document.getElementById(container.dataset.target);
+    var q = new Quill(container, {
+        theme: 'snow',
+        modules: { toolbar: [
+            ['bold', 'italic', 'underline'],
+            [{ list: 'ordered' }, { list: 'bullet' }],
+            ['link'],
+            ['clean']
+        ]}
+    });
+    if (input && input.value) q.root.innerHTML = input.value;
+    var form = container.closest('form');
+    if (form) {
+        form.addEventListener('submit', function() {
+            if (input) input.value = q.root.innerHTML === '<p><br></p>' ? '' : q.root.innerHTML;
+        });
+    }
+});
+</script>
+<?php endif ?>
 </body>
 </html>

@@ -820,3 +820,88 @@
     height: 12px;
     border-radius: 50%;
 }
+
+/* ── Public page content ─────────────────────────────────────────────────── */
+
+.e-public-logo-event {
+    text-align: center;
+    margin-bottom: 24px;
+}
+.e-public-logo-event img {
+    max-height: 100px;
+    max-width: 260px;
+    object-fit: contain;
+}
+
+.e-public-description {
+    margin-bottom: 20px;
+    line-height: 1.7;
+    color: var(--e-text);
+}
+.e-public-description p:last-child {
+    margin-bottom: 0;
+}
+
+.e-public-infobox {
+    margin-bottom: 20px;
+}
+
+.e-public-deadline {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: .875rem;
+    color: var(--e-accent);
+    margin-bottom: 16px;
+}
+
+.e-public-instructions {
+    margin-bottom: 20px;
+}
+
+.e-gdpr-notice {
+    font-size: .8rem;
+    color: var(--e-text-muted, #9a94b8);
+    margin-top: 12px;
+    margin-bottom: 20px;
+    line-height: 1.5;
+}
+
+/* Vote step indicator */
+.e-vote-steps {
+    display: flex;
+    margin-bottom: 28px;
+    font-size: .78rem;
+    gap: 0;
+}
+.e-vote-step {
+    flex: 1;
+    text-align: center;
+    padding: 6px 4px;
+    color: var(--e-text-muted, #9a94b8);
+    border-bottom: 2px solid #ece9f5;
+}
+.e-vote-step.active {
+    color: var(--e-primary);
+    font-weight: 700;
+    border-bottom-color: var(--e-primary);
+}
+.e-vote-step.done {
+    color: #27ae60;
+    border-bottom-color: #27ae60;
+}
+
+/* Quill editor in admin */
+.e-quill-editor {
+    min-height: 120px;
+    background: #fff;
+}
+.ql-toolbar {
+    border-radius: 6px 6px 0 0;
+    border-color: #e8e4f0 !important;
+}
+.ql-container {
+    border-radius: 0 0 6px 6px;
+    font-size: .9rem;
+    border-color: #e8e4f0 !important;
+}
